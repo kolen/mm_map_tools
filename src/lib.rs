@@ -1,35 +1,43 @@
 #[macro_use]
 extern crate nom;
+extern crate piston_window;
+extern crate image;
+
+use piston_window::{PistonWindow, WindowSettings, clear, OpenGL};
+
 use nom::{le_u8, le_u32, le_i32};
 use nom::IResult;
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use std::str;
+use std::fmt;
+use image::{Rgb, ImageBuffer};
+
+type Rgb8 = Rgb<u8>;
 
 #[derive(Debug)]
 struct SpriteFile {
     num_frames: u32,
     num_pallettes: u32,
-    pallettes: Vec<Vec<RGB>>,
+    pallettes: Vec<Vec<Rgb8>>,
     frames: Vec<Frame>
 }
 
-#[derive(Debug)]
-struct RGB {
-    r: u8,
-    g: u8,
-    b: u8
-}
-
-#[derive(Debug)]
 struct Frame {
     width: u32,
     height: u32,
     center_x: i32,
     center_y: i32,
     name: String,
-    size: u32
+    size: u32,
+    image: ImageBuffer<Rgb8, Vec<u8>>
+}
+
+impl fmt::Debug for Frame {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Frame {}", self.name)
+    }
 }
 
 fn frame(input: &[u8]) -> IResult<&[u8], Frame> {
@@ -48,11 +56,11 @@ fn frame(input: &[u8]) -> IResult<&[u8], Frame> {
             height: height,
             center_x: center_x,
             center_y: center_y,
-            name: name.trim_right_matches('\0').to_string()
+            name: name.trim_right_matches('\0').to_string(),
+            image: ImageBuffer::new(width, height)
         }
     })
 }
-
 
 macro_rules! frames(
     ($i:expr, $offsets:expr) => ({
@@ -69,11 +77,10 @@ macro_rules! frames(
     })
 );
 
-
-named!(pallette<&[u8], Vec<RGB> >,
+named!(pallette<&[u8], Vec<Rgb8> >,
        count!(chain!(r: le_u8 ~
                      g: le_u8 ~
-                     b: le_u8, || { RGB { r: r, g: g, b: b } } ),
+                     b: le_u8, || { [r, g, b] }),
               256));
 
 fn header(input: &[u8]) -> IResult<&[u8], SpriteFile> {
@@ -117,6 +124,30 @@ fn parse() -> io::Result<()> {
 }
 
 fn main() {
+    let opengl = OpenGL::V3_2;
+    let mut window: PistonWindow =
+        WindowSettings::new("piston: image", [300, 300])
+        .exit_on_esc(true)
+        .opengl(opengl)
+        .build()
+        .unwrap();
+
+    // let assets = find_folder::Search::ParentsThenKids(3, 3)
+    //     .for_folder("assets").unwrap();
+    // let rust_logo = assets.join("rust.png");
+    // let rust_logo = Texture::from_path(
+    //     &mut window.factory,
+    //     &rust_logo,
+    //     Flip::None,
+    //     &TextureSettings::new()
+    // ).unwrap();
+    while let Some(e) = window.next() {
+        window.draw_2d(&e, |c, g| {
+            clear([1.0; 4], g);
+            // image(&rust_logo, c.transform, g);
+        });
+    }
+
     match parse() {
         Err(e) => println!("Error: {}", e),
         Ok(()) => {}
