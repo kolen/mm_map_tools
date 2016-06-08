@@ -3,7 +3,7 @@ extern crate nom;
 extern crate piston_window;
 extern crate image;
 
-use piston_window::{PistonWindow, WindowSettings, clear, OpenGL};
+use piston_window::{PistonWindow, WindowSettings, clear, OpenGL, Texture};
 
 use nom::{le_u8, le_u32, le_i32};
 use nom::IResult;
@@ -12,9 +12,13 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::str;
 use std::fmt;
-use image::{Rgb, ImageBuffer};
+use std::iter;
+use image::Pixel;
+use image::{Rgba, Rgb, ImageBuffer, RgbaImage};
 
 type Rgb8 = Rgb<u8>;
+type Rgba8 = Rgba<u8>;
+type Pallette = Vec<Rgb8>;
 
 #[derive(Debug)]
 struct SpriteFile {
@@ -31,7 +35,7 @@ struct Frame {
     center_y: i32,
     name: String,
     size: u32,
-    image: ImageBuffer<Rgb8, Vec<u8>>
+    image: ImageBuffer<Rgba8, Vec<u8>>
 }
 
 impl fmt::Debug for Frame {
@@ -40,14 +44,71 @@ impl fmt::Debug for Frame {
     }
 }
 
-fn frame(input: &[u8]) -> IResult<&[u8], Frame> {
+fn indexed_to_rgba(pixel: Option<u8>, pallette: Pallette) -> Rgba8 {
+    match pixel {
+        Some(index) => pallette[index as usize].to_rgba(),
+        None => Rgba8 { data: [0, 0, 0, 0] }
+    }
+}
+
+struct IterPixelRow<'a> {
+    runs: &'a [u8],
+    pixels: &'a [u8],
+    is_skip: bool,
+    pixels_left: u8,
+    pallette: &'a Pallette,
+}
+
+impl <'a>Iterator for IterPixelRow<'a> {
+    type Item = Rgba8;
+    fn next(&mut self) -> Option<Rgba8> {
+        if self.pixels_left == 0 {
+            self.is_skip = !self.is_skip;
+            self.pixels_left = self.runs[0];
+            self.runs = &self.runs[1..];
+        }
+        self.pixels_left -= 1;
+        if self.is_skip {
+            Some(Rgba8 {data: [0, 0, 0, 0]})
+        } else {
+            Some(self.pallette[self.pixels[0] as usize].to_rgba())
+        }
+    }
+}
+
+fn pixels(input: &[u8], lines: &[(u32, u32)], width: u32, height: u32,
+          pallette: &Pallette) -> RgbaImage {
+    let mut bytes:Vec<u8> = Vec::with_capacity(width as usize * height as usize * 4);
+    let iter_rgba =
+        lines.into_iter().flat_map(|&(runs_offset, pixels_offset)| {
+            IterPixelRow {
+                runs: &input[runs_offset as usize ..],
+                pixels: &input[pixels_offset as usize ..],
+                is_skip: false,
+                pixels_left: 0,
+                pallette: pallette
+            }
+        });
+    for pixel in iter_rgba {
+        bytes.extend_from_slice(&pixel.data)
+    }
+
+    RgbaImage::from_raw(width, height, bytes).unwrap()
+}
+
+fn frame<'a>(input: &'a [u8], pallettes: &Vec<Pallette>)
+             -> IResult<&'a [u8], Frame> {
     chain!(input,
            size: le_u32 ~
            width: le_u32 ~
            height: le_u32 ~
            center_x: le_i32 ~
            center_y: le_i32 ~
-           name: take_str!(8) ,
+           name: take_str!(8) ~
+           pallette_index: le_u32 ~
+           le_u32 ~
+           le_u32 ~
+           rows: count!(tuple!(le_u32, le_u32), height as usize) ,
 
     || {
         Frame {
@@ -57,18 +118,19 @@ fn frame(input: &[u8]) -> IResult<&[u8], Frame> {
             center_x: center_x,
             center_y: center_y,
             name: name.trim_right_matches('\0').to_string(),
-            image: ImageBuffer::new(width, height)
+            image: pixels(input, &rows, width, height,
+                          &pallettes[pallette_index as usize])
         }
     })
 }
 
 macro_rules! frames(
-    ($i:expr, $offsets:expr) => ({
+    ($i:expr, $offsets:expr, $pallettes:expr) => ({
         let offsets: Vec<u32> = $offsets;
         let input: &[u8] = $i;
         let frames = offsets.iter()
             .map(|offset|
-                 match frame(&input[*offset as usize ..]) {
+                 match frame(&input[*offset as usize ..], $pallettes) {
                      IResult::Done(_, frame) => frame,
                      IResult::Error(e) => panic!("Error {:?}", e),
                      IResult::Incomplete(i) => panic!("Incomplete: {:?}", i)
@@ -80,7 +142,7 @@ macro_rules! frames(
 named!(pallette<&[u8], Vec<Rgb8> >,
        count!(chain!(r: le_u8 ~
                      g: le_u8 ~
-                     b: le_u8, || { [r, g, b] }),
+                     b: le_u8, || { Rgb{data: [r, g, b]} }),
               256));
 
 fn header(input: &[u8]) -> IResult<&[u8], SpriteFile> {
@@ -94,7 +156,7 @@ fn header(input: &[u8]) -> IResult<&[u8], SpriteFile> {
 
            pallettes: count!(pallette, num_pallettes as usize) ~
            frame_offsets: count!(le_u32, num_frames as usize) ~
-           frames: frames!(frame_offsets) ,
+           frames: frames!(frame_offsets, &pallettes) ,
 
            || {
                SpriteFile {
