@@ -62,7 +62,7 @@ struct IterPixelRow<'a> {
 impl <'a>Iterator for IterPixelRow<'a> {
     type Item = Rgba8;
     fn next(&mut self) -> Option<Rgba8> {
-        if self.pixels_left == 0 {
+        while self.pixels_left == 0 {
             self.is_skip = !self.is_skip;
             self.pixels_left = self.runs[0];
             self.runs = &self.runs[1..];
@@ -88,7 +88,7 @@ fn pixels(input: &[u8], lines: &[(u32, u32)], width: u32, height: u32,
                 is_skip: false,
                 pixels_left: 0,
                 pallette: pallette
-            }
+            }.take(width as usize)
         });
     for pixel in iter_rgba {
         bytes.extend_from_slice(&pixel.data)
@@ -184,6 +184,11 @@ fn parse() -> io::Result<()> {
     };
 
     Ok(())
+}
+
+#[test]
+fn test_load() {
+    parse();
 }
 
 fn main() {
