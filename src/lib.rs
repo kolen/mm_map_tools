@@ -78,7 +78,8 @@ impl <'a>Iterator for IterPixelRow<'a> {
 
 fn pixels(input: &[u8], lines: &[(u32, u32)], width: u32, height: u32,
           pallette: &Pallette) -> RgbaImage {
-    let mut bytes:Vec<u8> = Vec::with_capacity(width as usize * height as usize * 4);
+    let mut bytes:Vec<u8> = Vec::with_capacity(
+        width as usize * height as usize * 4);
     let iter_rgba =
         lines.into_iter().flat_map(|&(runs_offset, pixels_offset)| {
             IterPixelRow {
