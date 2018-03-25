@@ -7,12 +7,13 @@ authors = ["kolen <incredible.angst@gmail.com>"]
 name = "spr_decoder"
 
 [dependencies]
-nom = "^1.2.3"
-piston = "0.22.0"
-piston2d-graphics = "0.16.0"
-pistoncore-glutin_window = "0.26.0"
-piston2d-opengl_graphics = "0.28.0"
-piston_window = "0.47.2"
-image = "*"
-conrod = "*"
-find_folder = "*"
+nom = "4.0.0-beta2"
+image = "0.18.0"
+
+#piston = "0.22.0"
+#piston2d-graphics = "0.16.0"
+#pistoncore-glutin_window = "0.26.0"
+#piston2d-opengl_graphics = "0.28.0"
+#piston_window = "0.47.2"
+#conrod = "*"
+#find_folder = "*"
