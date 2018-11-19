@@ -186,8 +186,10 @@ fn test_load() {
     let mut f = File::open("/Volumes/data/games/Magic and Mayhem/Realms/Greek/Mountains/Terrain.spr").unwrap();
     let sprites = SpriteFile::parse(f);
 
+    let mut i = 0;
     for frame in sprites.frames {
         if frame.image.width() == 0 || frame.image.height() == 0 { continue }
-        frame.image.save(&format!("/tmp/sprintes/{}-{}-{}.png", frame.name, frame.unknown1, frame.unknown2)).unwrap();
+        frame.image.save(&format!("/tmp/sprites/{:06}-{}-{}-{}.png", i, frame.name, frame.unknown1, frame.unknown2)).unwrap();
+	i+= 1;
     }
 }
