@@ -53,6 +53,7 @@ pub enum DecompressError {
     DecompressChecksumNonMatch,
     InvalidCompressionType,
     CompressionNotSupported,
+    ContentTooSmall,
     FileError { error: std::io::Error } 
 }
 
@@ -101,6 +102,9 @@ fn lz77_decompress(input: &mut[u8]) -> Result<Vec<u8>, DecompressError> {
 }
 
 pub fn decompress(input: &mut[u8], size: usize) -> Result<Vec<u8>, DecompressError> {
+    if size <= 20 {
+        return Err(DecompressError::ContentTooSmall);
+    }
     deobfuscate(input, size)?;
     let header = Header::from_bytes(input)?;
     match header.compression {
@@ -123,4 +127,13 @@ fn test_decompress() {
     let decoded = read_decompressed("/Volumes/data/games/Magic and Mayhem/Realms/Celtic/Forest/CFsec50.map");
     assert!(decoded.is_ok());
     assert_eq!(6, LittleEndian::read_u32(&decoded.unwrap()));
+}
+
+#[test]
+fn test_too_short() {
+    let decoded = decompress(&mut vec![0; 10], 10);
+    match decoded.unwrap_err() {
+        DecompressError::ContentTooSmall => (),
+        x => panic!("Invalid error {:?}", x)
+    }
 }
