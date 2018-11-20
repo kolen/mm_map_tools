@@ -79,13 +79,12 @@ fn checksum_(input: &[u8], size: isize) -> u32 {
 fn deobfuscate(input: &mut[u8], size: usize) -> Result<(), DecompressError> {
     init_prng_once();
     unsafe { decrypt(input.as_mut_ptr(), size); }
-    Header::from_bytes(input).and_then(|header| {
-        if header.checksum_deobfuscated == checksum_(&input[HEADER_SIZE..], (size - HEADER_SIZE) as isize) {
-            Ok(())
-        } else {
-            Err(DecompressError::DeobfuscateChecksumNotMatch)
-        }
-    })
+    let header = Header::from_bytes(input)?;
+    if header.checksum_deobfuscated == checksum_(&input[HEADER_SIZE..], (size - HEADER_SIZE) as isize) {
+        Ok(())
+    } else {
+        Err(DecompressError::DeobfuscateChecksumNotMatch)
+    }
 }
 
 fn lz77_decompress(input: &mut[u8]) -> Result<Vec<u8>, DecompressError> {
