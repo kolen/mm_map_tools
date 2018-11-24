@@ -122,18 +122,23 @@ pub fn read_decompressed<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, DecompressE
     decompress(&mut buffer, len)
 }
 
-#[test]
-fn test_decompress() {
-    let decoded = read_decompressed("/Volumes/data/games/Magic and Mayhem/Realms/Celtic/Forest/CFsec50.map");
-    assert!(decoded.is_ok());
-    assert_eq!(6, LittleEndian::read_u32(&decoded.unwrap()));
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_utils::*;
+    #[test]
+    fn test_decompress() {
+        let decoded = read_decompressed(&test_file_path("Realms/Celtic/Forest/CFsec50.map"));
+        assert!(decoded.is_ok(), "Decompress failed: {:?}", decoded);
+        assert_eq!(6, LittleEndian::read_u32(&decoded.unwrap()));
+    }
 
-#[test]
-fn test_too_short() {
-    let decoded = decompress(&mut vec![0; 10], 10);
-    match decoded.unwrap_err() {
-        DecompressError::ContentTooSmall => (),
-        x => panic!("Invalid error {:?}", x)
+    #[test]
+    fn test_too_short() {
+        let decoded = decompress(&mut vec![0; 10], 10);
+        match decoded.unwrap_err() {
+            DecompressError::ContentTooSmall => (),
+            x => panic!("Invalid error {:?}", x)
+        }
     }
 }
