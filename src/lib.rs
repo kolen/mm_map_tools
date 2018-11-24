@@ -5,4 +5,6 @@ extern crate byteorder;
 
 mod sprite_file;
 mod decompress;
-
+mod map;
+#[cfg(test)]
+mod test_utils;
