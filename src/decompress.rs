@@ -89,7 +89,7 @@ fn deobfuscate(input: &mut[u8], size: usize) -> Result<(), DecompressError> {
     }
 }
 
-fn lz77_decompress(input: &mut[u8]) -> Result<Vec<u8>, DecompressError> {
+fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
      // TODO: Why * 2? Seen this in mmdecrypt.c
     let mut buffer = vec![0; (header.unpacked_size * 2) as usize];
