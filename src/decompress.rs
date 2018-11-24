@@ -54,7 +54,7 @@ pub enum DecompressError {
     InvalidCompressionType,
     CompressionNotSupported,
     ContentTooSmall,
-    FileError { error: std::io::Error } 
+    FileError { error: std::io::Error }
 }
 
 impl From<std::io::Error> for DecompressError {
