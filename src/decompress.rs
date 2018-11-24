@@ -74,6 +74,7 @@ fn init_prng_once() {
 fn checksum_(input: &[u8], size: isize) -> u32 {
     assert!(size > 0);
     assert!(size <= input.len() as isize);
+    assert!(size % 4 == 0, format!("Size must be multiple of 4: {}", size));
     unsafe { checksum(input.as_ptr(), size) }
 }
 
