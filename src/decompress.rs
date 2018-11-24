@@ -117,9 +117,9 @@ pub fn decompress(input: &mut[u8], size: usize) -> Result<Vec<u8>, DecompressErr
 pub fn read_decompressed<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, DecompressError> {
     let mut f = File::open(&path)?;
     let mut buffer = Vec::new();
-    let size = fs::metadata(&path)?.len() as usize;
     f.read_to_end(&mut buffer)?;
-    decompress(&mut buffer, size)
+    let len = buffer.len();
+    decompress(&mut buffer, len)
 }
 
 #[test]
