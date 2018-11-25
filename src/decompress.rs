@@ -8,7 +8,6 @@ use byteorder::{ByteOrder, LittleEndian};
 extern "C" {
     fn init_prng_map();
     fn decrypt(input: *mut u8, size: usize);
-    fn checksum(input: *const u8, size: isize) -> u32;
     fn lz_unpack(input: *const u8, output: *mut u8, unpacked_size: isize);
 }
 
@@ -71,18 +70,32 @@ fn init_prng_once() {
     });
 }
 
-fn checksum_(input: &[u8], size: isize) -> u32 {
-    assert!(size > 0);
-    assert!(size <= input.len() as isize);
-    assert!(size % 4 == 0, format!("Size must be multiple of 4: {}", size));
-    unsafe { checksum(input.as_ptr(), size) }
+fn checksum(data: &[u8]) -> u32 {
+    let mut sum:u32 = 0;
+    let mut odd:bool = false;
+    // Change to exact_chunks when it stabilize
+    for chunk in data.chunks(4) {
+        let element:u32 = if chunk.len() == 4 {
+            LittleEndian::read_u32(chunk)
+        } else {
+            0 // Incomplete 32-bit uint is treated as zero
+        };
+
+        if odd {
+            sum = sum.wrapping_add(element);
+        } else {
+            sum ^= element;
+        }
+        odd = !odd;
+    }
+    sum
 }
 
 fn deobfuscate(input: &mut[u8], size: usize) -> Result<(), DecompressError> {
     init_prng_once();
     unsafe { decrypt(input.as_mut_ptr(), size); }
     let header = Header::from_bytes(input)?;
-    if header.checksum_deobfuscated == checksum_(&input[HEADER_SIZE..], (size - HEADER_SIZE) as isize) {
+    if header.checksum_deobfuscated == checksum(&input[HEADER_SIZE..]) {
         Ok(())
     } else {
         Err(DecompressError::DeobfuscateChecksumNotMatch)
@@ -95,7 +108,7 @@ fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let mut buffer = vec![0; (header.unpacked_size * 2) as usize];
     unsafe { lz_unpack(input[HEADER_SIZE..].as_ptr(), buffer.as_mut_ptr(), header.unpacked_size as isize); }
 
-    if header.checksum_uncompressed == checksum_(&buffer, header.unpacked_size as isize) {
+    if header.checksum_uncompressed == checksum(&buffer) {
         Ok(buffer)
     } else {
         Err(DecompressError::DecompressChecksumNonMatch)
