@@ -1,9 +1,9 @@
-use std::sync::Once;
+use byteorder::{ByteOrder, LittleEndian};
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use byteorder::{ByteOrder, LittleEndian};
+use std::sync::Once;
 
 extern "C" {
     fn init_prng_map();
@@ -15,7 +15,7 @@ extern "C" {
 enum CompressionType {
     Uncompressed = 0,
     RLE = 1,
-    LZ77 = 2
+    LZ77 = 2,
 }
 
 #[derive(Debug)]
@@ -24,10 +24,10 @@ struct Header {
     unpacked_size: u32,
     checksum_deobfuscated: u32,
     checksum_uncompressed: u32,
-    compression: CompressionType
+    compression: CompressionType,
 }
 
-const HEADER_SIZE:usize = 4 * 5;
+const HEADER_SIZE: usize = 4 * 5;
 
 impl Header {
     pub fn from_bytes(input: &[u8]) -> Result<Header, DecompressError> {
@@ -40,8 +40,8 @@ impl Header {
                 x if x == CompressionType::Uncompressed as u32 => CompressionType::Uncompressed,
                 x if x == CompressionType::RLE as u32 => CompressionType::RLE,
                 x if x == CompressionType::LZ77 as u32 => CompressionType::LZ77,
-                _ => panic!("Invalid compression type") // TODO: return error
-            }
+                _ => panic!("Invalid compression type"), // TODO: return error
+            },
         })
     }
 }
@@ -53,7 +53,7 @@ pub enum DecompressError {
     InvalidCompressionType,
     CompressionNotSupported,
     ContentTooSmall,
-    FileError { error: std::io::Error }
+    FileError { error: std::io::Error },
 }
 
 impl From<std::io::Error> for DecompressError {
@@ -62,20 +62,20 @@ impl From<std::io::Error> for DecompressError {
     }
 }
 
-static prng_initialized:Once = Once::new();
+static prng_initialized: Once = Once::new();
 
 fn init_prng_once() {
-    prng_initialized.call_once(|| {
-        unsafe { init_prng_map(); }
+    prng_initialized.call_once(|| unsafe {
+        init_prng_map();
     });
 }
 
 fn checksum(data: &[u8]) -> u32 {
-    let mut sum:u32 = 0;
-    let mut odd:bool = false;
+    let mut sum: u32 = 0;
+    let mut odd: bool = false;
     // Change to exact_chunks when it stabilize
     for chunk in data.chunks(4) {
-        let element:u32 = if chunk.len() == 4 {
+        let element: u32 = if chunk.len() == 4 {
             LittleEndian::read_u32(chunk)
         } else {
             0 // Incomplete 32-bit uint is treated as zero
@@ -91,9 +91,11 @@ fn checksum(data: &[u8]) -> u32 {
     sum
 }
 
-fn deobfuscate(input: &mut[u8]) -> Result<(), DecompressError> {
+fn deobfuscate(input: &mut [u8]) -> Result<(), DecompressError> {
     init_prng_once();
-    unsafe { decrypt(input.as_mut_ptr(), input.len()); }
+    unsafe {
+        decrypt(input.as_mut_ptr(), input.len());
+    }
     let header = Header::from_bytes(input)?;
     if header.checksum_deobfuscated == checksum(&input[HEADER_SIZE..]) {
         Ok(())
@@ -104,9 +106,15 @@ fn deobfuscate(input: &mut[u8]) -> Result<(), DecompressError> {
 
 fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
-     // TODO: Why * 2? Seen this in mmdecrypt.c
+    // TODO: Why * 2? Seen this in mmdecrypt.c
     let mut buffer = vec![0; (header.unpacked_size * 2) as usize];
-    unsafe { lz_unpack(input[HEADER_SIZE..].as_ptr(), buffer.as_mut_ptr(), header.unpacked_size as isize); }
+    unsafe {
+        lz_unpack(
+            input[HEADER_SIZE..].as_ptr(),
+            buffer.as_mut_ptr(),
+            header.unpacked_size as isize,
+        );
+    }
 
     buffer.resize(header.unpacked_size as usize, 0);
     if header.checksum_uncompressed == checksum(&buffer) {
@@ -116,7 +124,7 @@ fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     }
 }
 
-pub fn decompress(input: &mut[u8], size: usize) -> Result<Vec<u8>, DecompressError> {
+pub fn decompress(input: &mut [u8], size: usize) -> Result<Vec<u8>, DecompressError> {
     if size <= 20 {
         return Err(DecompressError::ContentTooSmall);
     }
@@ -125,7 +133,7 @@ pub fn decompress(input: &mut[u8], size: usize) -> Result<Vec<u8>, DecompressErr
     match header.compression {
         CompressionType::Uncompressed => Ok(input[HEADER_SIZE..].to_vec()),
         CompressionType::RLE => Err(DecompressError::CompressionNotSupported),
-        CompressionType::LZ77 => lz77_decompress(input)
+        CompressionType::LZ77 => lz77_decompress(input),
     }
 }
 
@@ -152,7 +160,7 @@ mod tests {
         let decoded = decompress(&mut vec![0; 10], 10);
         match decoded.unwrap_err() {
             DecompressError::ContentTooSmall => (),
-            x => panic!("Invalid error {:?}", x)
+            x => panic!("Invalid error {:?}", x),
         }
     }
 }
