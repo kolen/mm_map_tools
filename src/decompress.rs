@@ -108,8 +108,8 @@ fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let mut buffer = vec![0; (header.unpacked_size * 2) as usize];
     unsafe { lz_unpack(input[HEADER_SIZE..].as_ptr(), buffer.as_mut_ptr(), header.unpacked_size as isize); }
 
+    buffer.resize(header.unpacked_size as usize, 0);
     if header.checksum_uncompressed == checksum(&buffer) {
-        buffer.resize(header.unpacked_size as usize, 0);
         Ok(buffer)
     } else {
         Err(DecompressError::DecompressChecksumNonMatch)
