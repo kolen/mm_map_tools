@@ -120,7 +120,7 @@ pub fn decompress(input: &mut[u8], size: usize) -> Result<Vec<u8>, DecompressErr
     if size <= 20 {
         return Err(DecompressError::ContentTooSmall);
     }
-    deobfuscate(input, size)?;
+    deobfuscate(input)?;
     let header = Header::from_bytes(input)?;
     match header.compression {
         CompressionType::Uncompressed => Ok(input[HEADER_SIZE..].to_vec()),
