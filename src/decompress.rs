@@ -124,8 +124,8 @@ fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     }
 }
 
-pub fn decompress(input: &mut [u8], size: usize) -> Result<Vec<u8>, DecompressError> {
-    if size <= 20 {
+pub fn decompress(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
+    if input.len() <= 20 {
         return Err(DecompressError::ContentTooSmall);
     }
     deobfuscate(input)?;
@@ -140,8 +140,8 @@ pub fn decompress(input: &mut [u8], size: usize) -> Result<Vec<u8>, DecompressEr
 pub fn read_decompressed<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, DecompressError> {
     let mut f = File::open(&path)?;
     let mut buffer = Vec::new();
-    let len = f.read_to_end(&mut buffer)?;
-    decompress(&mut buffer, len)
+    f.read_to_end(&mut buffer)?;
+    decompress(&mut buffer)
 }
 
 #[cfg(test)]
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_too_short() {
-        let decoded = decompress(&mut vec![0; 10], 10);
+        let decoded = decompress(&mut vec![0; 10]);
         match decoded.unwrap_err() {
             DecompressError::ContentTooSmall => (),
             x => panic!("Invalid error {:?}", x),
