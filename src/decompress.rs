@@ -91,9 +91,9 @@ fn checksum(data: &[u8]) -> u32 {
     sum
 }
 
-fn deobfuscate(input: &mut[u8], size: usize) -> Result<(), DecompressError> {
+fn deobfuscate(input: &mut[u8]) -> Result<(), DecompressError> {
     init_prng_once();
-    unsafe { decrypt(input.as_mut_ptr(), size); }
+    unsafe { decrypt(input.as_mut_ptr(), input.len()); }
     let header = Header::from_bytes(input)?;
     if header.checksum_deobfuscated == checksum(&input[HEADER_SIZE..]) {
         Ok(())
