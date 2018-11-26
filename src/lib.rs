@@ -7,6 +7,6 @@ extern crate lazy_static;
 
 mod sprite_file;
 mod decompress;
-mod map;
+mod map_section;
 #[cfg(test)]
 mod test_utils;
