@@ -62,13 +62,13 @@ impl From<std::io::Error> for DecompressError {
     }
 }
 
-static prng_initialized: Once = Once::new();
+static PRNG_INITIALIZED: Once = Once::new();
 lazy_static! {
     static ref EXTERNAL_LIB_LOCK: Mutex<()> = Mutex::new(());
 }
 
 fn init_prng_once() {
-    prng_initialized.call_once(|| unsafe {
+    PRNG_INITIALIZED.call_once(|| unsafe {
         init_prng_map();
     });
 }
