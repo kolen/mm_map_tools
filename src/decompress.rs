@@ -3,7 +3,7 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::sync::Once;
+use std::sync::{Mutex, Once};
 
 extern "C" {
     fn init_prng_map();
@@ -63,6 +63,9 @@ impl From<std::io::Error> for DecompressError {
 }
 
 static prng_initialized: Once = Once::new();
+lazy_static! {
+    static ref EXTERNAL_LIB_LOCK: Mutex<()> = Mutex::new(());
+}
 
 fn init_prng_once() {
     prng_initialized.call_once(|| unsafe {
@@ -128,6 +131,8 @@ pub fn decompress(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     if input.len() <= 20 {
         return Err(DecompressError::ContentTooSmall);
     }
+    // mmdecrypt.c is not thread-safe
+    let _lock = EXTERNAL_LIB_LOCK.lock().unwrap();
     deobfuscate(input)?;
     let header = Header::from_bytes(input)?;
     match header.compression {

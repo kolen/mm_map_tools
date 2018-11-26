@@ -10,6 +10,7 @@ name = "spr_decoder"
 nom = "4.1.1"
 image = "0.20.1"
 byteorder = "1.2.7"
+lazy_static = "1.2.0"
 
 [build-dependencies]
 cc = "1.0"
