@@ -94,8 +94,7 @@ fn draw_tile(
     }
     let proj_tile_coordinates = project(tile_coordinates);
     let sprite = &sprites.frames[tile_id as usize];
-    let target_coordinates = proj_tile_coordinates -
-        Vector2::new(sprite.center_x, sprite.center_y);
+    let target_coordinates = proj_tile_coordinates - Vector2::new(sprite.center_x, sprite.center_y);
 
     blit(
         canvas,
