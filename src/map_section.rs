@@ -11,6 +11,9 @@ pub struct Tile {
     pub id: u16,
 }
 
+const TILE_BYTES: usize = 12;
+const TILES_OFFSET: usize = 0x4c;
+
 impl MapSection {
     pub fn from_contents(contents: Vec<u8>) -> Self {
         assert_eq!(6, LittleEndian::read_u32(&contents));
@@ -26,16 +29,17 @@ impl MapSection {
         assert!(x < self.size_x);
         assert!(y < self.size_y);
         assert!(z < self.size_z);
-        let offset: usize = self.size_z as usize * self.size_y as usize * 6 * z as usize
-            + self.size_y as usize * 6 * y as usize
-            + x as usize * 6;
+        let floor_bytes: usize = (self.size_x as usize) * (self.size_y as usize) * TILE_BYTES;
+        let row_bytes: usize = (self.size_x as usize) * TILE_BYTES;
+        let offset: usize =
+            floor_bytes * (z as usize) + row_bytes * (y as usize) + TILE_BYTES * (x as usize);
         Tile {
             id: LittleEndian::read_u16(&self.tiles_data()[offset..]),
         }
     }
 
     fn tiles_data(&self) -> &[u8] {
-        &self.contents[0x4c..]
+        &self.contents[TILES_OFFSET..]
     }
 }
 
@@ -51,6 +55,6 @@ mod tests {
         assert_eq!(20, map.size_x);
         assert_eq!(20, map.size_y);
         assert_eq!(24, map.size_z);
-        assert_eq!(878, map.tile_at(10, 10, 20).id);
+        assert_eq!(0, map.tile_at(19, 19, 23).id);
     }
 }
