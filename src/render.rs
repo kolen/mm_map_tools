@@ -89,16 +89,18 @@ fn draw_tile(
     tile_coordinates: TileCoordinates,
     tile_id: u16,
 ) {
-    let target_coordinates = project(tile_coordinates);
-
     if tile_id == 0xffff || tile_id == 0x0000 {
         return;
     }
+    let proj_tile_coordinates = project(tile_coordinates);
+    let sprite = &sprites.frames[tile_id as usize];
+    let target_coordinates = proj_tile_coordinates -
+        Vector2::new(sprite.center_x, sprite.center_y);
 
     blit(
         canvas,
         &sprites.frames[tile_id as usize].image,
-        Vector2::new(target_coordinates.x, target_coordinates.y),
+        target_coordinates,
     )
 }
 
