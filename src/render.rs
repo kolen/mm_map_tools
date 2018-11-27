@@ -5,6 +5,8 @@ use sprite_file::SpriteFile;
 
 const TILE_W: i32 = 64;
 const TILE_H: i32 = 32;
+const TILE_HALF_W: i32 = TILE_W / 2;
+const TILE_HALF_H: i32 = TILE_H / 2;
 const TILE_Z_OFFSET: i32 = 48 - 32; // TODO: figure out
 
 type TileCoordinates = Matrix<i32, U3, U1, MatrixArray<i32, U3, U1>>;
@@ -38,25 +40,55 @@ fn rotate_tile_coordinates(
     Vector3::new(tilexy2.x, tilexy2.y, source.z)
 }
 
+#[derive(Debug)]
+struct CanvasSize {
+    size: Vector2<u32>,
+    center: Vector2<i32>,
+}
+
+impl CanvasSize {
+    fn for_map_section(map_section: &MapSection) -> Self {
+        assert_eq!(
+            map_section.size_x, map_section.size_y,
+            "Maps with size_x != size_y not supported"
+        );
+        let size = Vector2::new(
+            (map_section.size_x + map_section.size_y) * TILE_HALF_W as u32,
+            map_section.size_x * TILE_H as u32 + map_section.size_z * TILE_Z_OFFSET as u32,
+        );
+        let center = Vector2::new(
+            map_section.size_x as i32 * TILE_HALF_W,
+            map_section.size_z as i32 * TILE_Z_OFFSET,
+        );
+        CanvasSize {
+            size: size,
+            center: center,
+        }
+    }
+}
+
 fn project(tile_coordinates: TileCoordinates) -> Vector2<i32> {
+    /*
+                     /|\ z
+                      |
+                      |
+                      o. . . . . x'
+                    -`:`-
+                  -`  :  `-
+              y \/    :y'  \/ x
+    */
     #[rustfmt::skip]
     let projection: Matrix2x3<i32> = Matrix2x3::new(
-        TILE_W / 2,   TILE_W / 2,   0,
-        TILE_H / 2, -(TILE_H / 2), -TILE_Z_OFFSET,
+        TILE_HALF_W, -TILE_HALF_W,  0,
+        TILE_HALF_H,  TILE_HALF_H, -TILE_Z_OFFSET,
     );
-    let base_point: Vector2<i32> = Vector2::new(0, 1024);
-
-    base_point + projection * tile_coordinates
+    projection * tile_coordinates
 }
 
 fn map_rendering_order<'a>(map_section: &'a MapSection) -> impl Iterator<Item = TileCoordinates> {
     let (sx, sy, sz) = (map_section.size_x, map_section.size_y, map_section.size_z);
     (0..sz).flat_map(move |z| {
-        (0..sx).flat_map(move |x| {
-            (0..sy)
-                .rev()
-                .map(move |y| Vector3::new(x as i32, y as i32, z as i32))
-        })
+        (0..sx).flat_map(move |x| (0..sy).map(move |y| Vector3::new(x as i32, y as i32, z as i32)))
     })
 }
 
@@ -88,13 +120,15 @@ fn draw_tile(
     sprites: &SpriteFile,
     tile_coordinates: TileCoordinates,
     tile_id: u16,
+    origin: Vector2<i32>,
 ) {
     if tile_id == 0xffff || tile_id == 0x0000 {
         return;
     }
     let proj_tile_coordinates = project(tile_coordinates);
     let sprite = &sprites.frames[tile_id as usize];
-    let target_coordinates = proj_tile_coordinates - Vector2::new(sprite.center_x, sprite.center_y);
+    let target_coordinates =
+        proj_tile_coordinates - Vector2::new(sprite.center_x, sprite.center_y) + origin;
 
     blit(
         canvas,
@@ -104,7 +138,8 @@ fn draw_tile(
 }
 
 pub fn render_map_section(map_section: &MapSection, sprites: &SpriteFile) -> image::RgbaImage {
-    let mut canvas = image::RgbaImage::new(2048, 2048);
+    let canvas_size = CanvasSize::for_map_section(map_section);
+    let mut canvas = image::RgbaImage::new(canvas_size.size.x, canvas_size.size.y);
     for tile_coordinates in map_rendering_order(map_section) {
         draw_tile(
             &mut canvas,
@@ -113,9 +148,10 @@ pub fn render_map_section(map_section: &MapSection, sprites: &SpriteFile) -> ima
             map_section
                 .tile_at(
                     tile_coordinates.x as u32,
-                    map_section.size_y - (tile_coordinates.y as u32) - 1,
+                    tile_coordinates.y as u32,
                     tile_coordinates.z as u32,
                 ).id,
+            canvas_size.center,
         );
     }
     canvas
@@ -137,7 +173,6 @@ mod tests {
         let sprites = SpriteFile::parse(
             File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap(),
         );
-        let canvas = render_map_section(&map_section, &sprites);
-        canvas.save("/tmp/map.png").unwrap();
+        render_map_section(&map_section, &sprites);
     }
 }
