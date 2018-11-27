@@ -1,11 +1,11 @@
-use nom::{le_u8, le_u32, le_i32, rest};
+use nom::{le_i32, le_u32, le_u8, rest};
 
-use std::io::prelude::*;
-use std::fs::File;
-use std::fmt;
-use std::iter;
 use image::Pixel;
-use image::{Rgba, Rgb, ImageBuffer, RgbaImage};
+use image::{ImageBuffer, Rgb, Rgba, RgbaImage};
+use std::fmt;
+use std::fs::File;
+use std::io::prelude::*;
+use std::iter;
 
 type Rgb8 = Rgb<u8>;
 type Rgba8 = Rgba<u8>;
@@ -14,12 +14,12 @@ type Pallette = Vec<Rgb8>;
 #[derive(Debug)]
 pub struct SpriteFile {
     pub pallettes: Vec<Pallette>,
-    pub frames: Vec<Frame>
+    pub frames: Vec<Frame>,
 }
 
 struct SpriteFileHeader {
     pallettes: Vec<Pallette>,
-    frame_offsets: Vec<u32>
+    frame_offsets: Vec<u32>,
 }
 
 pub struct Frame {
@@ -30,19 +30,23 @@ pub struct Frame {
     pub unknown1: u32,
     pub unknown2: u32,
     pub name: String,
-    pub image: ImageBuffer<Rgba8, Vec<u8>>
+    pub image: ImageBuffer<Rgba8, Vec<u8>>,
 }
 
 impl fmt::Debug for Frame {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Frame '{}' {}x{} {}, {}", self.name, self.width, self.height, self.unknown1, self.unknown2)
+        write!(
+            f,
+            "Frame '{}' {}x{} {}, {}",
+            self.name, self.width, self.height, self.unknown1, self.unknown2
+        )
     }
 }
 
 fn indexed_to_rgba(pixel: Option<u8>, pallette: Pallette) -> Rgba8 {
     match pixel {
         Some(index) => pallette[index as usize].to_rgba(),
-        None => Rgba8 { data: [0, 0, 0, 0] }
+        None => Rgba8 { data: [0, 0, 0, 0] },
     }
 }
 
@@ -53,10 +57,16 @@ impl SpriteFile {
 
         let (payload, header) = header(&buf[..]).unwrap();
 
-        let frames = header.frame_offsets.iter().filter_map(|&offset| {
-            Some(frame(&payload[offset as usize..], &header.pallettes)
-                .expect(&format!("Can't decode frame at {}", offset)).1)
-        }).collect();
+        let frames = header
+            .frame_offsets
+            .iter()
+            .filter_map(|&offset| {
+                Some(
+                    frame(&payload[offset as usize..], &header.pallettes)
+                        .expect(&format!("Can't decode frame at {}", offset))
+                        .1,
+                )
+            }).collect();
 
         SpriteFile {
             pallettes: header.pallettes,
@@ -73,7 +83,7 @@ struct IterPixelRow<'a> {
     pallette: &'a Pallette,
 }
 
-impl <'a>Iterator for IterPixelRow<'a> {
+impl<'a> Iterator for IterPixelRow<'a> {
     type Item = Rgba8;
     fn next(&mut self) -> Option<Rgba8> {
         while self.pixels_left == 0 {
@@ -83,7 +93,7 @@ impl <'a>Iterator for IterPixelRow<'a> {
         }
         self.pixels_left -= 1;
         if self.is_skip {
-            Some(Rgba8 {data: [0, 0, 0, 0]})
+            Some(Rgba8 { data: [0, 0, 0, 0] })
         } else {
             let pixel = self.pixels[0];
             self.pixels = &self.pixels[1..];
@@ -94,27 +104,27 @@ impl <'a>Iterator for IterPixelRow<'a> {
 
 struct LineOffsets {
     runs_offset: u32,
-    pixels_offset: u32
+    pixels_offset: u32,
 }
 
-fn pixels(input: &[u8],
-          lines: Vec<LineOffsets>,
-          width: u32,
-          height: u32,
-          pallette: &Pallette) -> RgbaImage {
-    let mut bytes:Vec<u8> = Vec::with_capacity(
-        width as usize * height as usize * 4);
-    let iter_rgba =
-        lines.into_iter().flat_map(|offsets| {
-            IterPixelRow {
-                runs: &input[offsets.runs_offset as usize ..],
-                pixels: &input[offsets.pixels_offset as usize ..],
-                is_skip: false,
-                pixels_left: 0,
-                pallette: pallette
-            }.chain(iter::repeat(Rgba8 {data: [0, 0, 0, 0]}))
-                .take(width as usize)
-        });
+fn pixels(
+    input: &[u8],
+    lines: Vec<LineOffsets>,
+    width: u32,
+    height: u32,
+    pallette: &Pallette,
+) -> RgbaImage {
+    let mut bytes: Vec<u8> = Vec::with_capacity(width as usize * height as usize * 4);
+    let iter_rgba = lines.into_iter().flat_map(|offsets| {
+        IterPixelRow {
+            runs: &input[offsets.runs_offset as usize..],
+            pixels: &input[offsets.pixels_offset as usize..],
+            is_skip: false,
+            pixels_left: 0,
+            pallette: pallette,
+        }.chain(iter::repeat(Rgba8 { data: [0, 0, 0, 0] }))
+        .take(width as usize)
+    });
     for pixel in iter_rgba {
         bytes.extend_from_slice(&pixel.data)
     }
