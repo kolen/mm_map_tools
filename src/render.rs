@@ -112,7 +112,7 @@ pub fn render_map_section(map_section: &MapSection, sprites: &SpriteFile) -> ima
             map_section
                 .tile_at(
                     tile_coordinates.x as u32,
-                    tile_coordinates.y as u32,
+                    map_section.size_y - (tile_coordinates.y as u32) - 1,
                     tile_coordinates.z as u32,
                 ).id,
         );
