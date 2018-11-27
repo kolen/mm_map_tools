@@ -1,8 +1,8 @@
-extern crate spr_decoder;
-use spr_decoder::decompress::read_decompressed;
-use spr_decoder::map_section::MapSection;
-use spr_decoder::render::render_map_section;
-use spr_decoder::sprite_file::SpriteFile;
+extern crate mm_map_tools;
+use mm_map_tools::decompress::read_decompressed;
+use mm_map_tools::map_section::MapSection;
+use mm_map_tools::render::render_map_section;
+use mm_map_tools::sprite_file::SpriteFile;
 use std::env;
 use std::fs::File;
 use std::path::Path;

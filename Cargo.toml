@@ -1,10 +1,10 @@
 [package]
-name = "spr_decoder"
+name = "mm_map_tools"
 version = "0.1.0"
 authors = ["kolen <incredible.angst@gmail.com>"]
 
 [lib]
-name = "spr_decoder"
+name = "mm_map_tools"
 
 [dependencies]
 nom = "4.1.1"
