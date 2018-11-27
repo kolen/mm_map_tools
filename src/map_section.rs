@@ -1,14 +1,14 @@
 use byteorder::{ByteOrder, LittleEndian};
 
 pub struct MapSection {
-    size_x: u32,
-    size_y: u32,
-    size_z: u32,
-    contents: Vec<u8>,
+    pub size_x: u32,
+    pub size_y: u32,
+    pub size_z: u32,
+    pub contents: Vec<u8>,
 }
 
 pub struct Tile {
-    id: u16,
+    pub id: u16,
 }
 
 impl MapSection {

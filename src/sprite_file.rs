@@ -13,8 +13,8 @@ type Pallette = Vec<Rgb8>;
 
 #[derive(Debug)]
 pub struct SpriteFile {
-    pallettes: Vec<Pallette>,
-    frames: Vec<Frame>
+    pub pallettes: Vec<Pallette>,
+    pub frames: Vec<Frame>
 }
 
 struct SpriteFileHeader {
@@ -23,14 +23,14 @@ struct SpriteFileHeader {
 }
 
 pub struct Frame {
-    width: u32,
-    height: u32,
-    center_x: i32,
-    center_y: i32,
-    unknown1: u32,
-    unknown2: u32,
-    name: String,
-    image: ImageBuffer<Rgba8, Vec<u8>>
+    pub width: u32,
+    pub height: u32,
+    pub center_x: i32,
+    pub center_y: i32,
+    pub unknown1: u32,
+    pub unknown2: u32,
+    pub name: String,
+    pub image: ImageBuffer<Rgba8, Vec<u8>>
 }
 
 impl fmt::Debug for Frame {
