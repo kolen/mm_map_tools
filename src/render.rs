@@ -65,7 +65,6 @@ fn draw_tile(
     if tile_id == 0xffff || tile_id == 0x0000 {
         return;
     }
-    println!("{:?}", target_coordinates);
 
     blit(
         canvas,
