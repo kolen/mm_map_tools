@@ -177,15 +177,14 @@ named!(header<&[u8], SpriteFileHeader>,
     )
 );
 
-#[test]
-fn test_load() {
-    let mut f = File::open("/Volumes/data/games/Magic and Mayhem/Realms/Greek/Mountains/Terrain.spr").unwrap();
-    let sprites = SpriteFile::parse(f);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_utils::*;
 
-    let mut i = 0;
-    for frame in sprites.frames {
-        if frame.image.width() == 0 || frame.image.height() == 0 { continue }
-        frame.image.save(&format!("/tmp/sprites/{:06}-{}-{}-{}.png", i, frame.name, frame.unknown1, frame.unknown2)).unwrap();
-	i+= 1;
+    #[test]
+    fn test_load() {
+        let f = File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap();
+        SpriteFile::parse(f);
     }
 }
