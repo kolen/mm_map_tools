@@ -6,9 +6,9 @@ extern crate byteorder;
 extern crate lazy_static;
 extern crate nalgebra;
 
-mod sprite_file;
-mod decompress;
-mod map_section;
-mod render;
+pub mod sprite_file;
+pub mod decompress;
+pub mod map_section;
+pub mod render;
 #[cfg(test)]
 mod test_utils;
