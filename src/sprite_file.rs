@@ -58,10 +58,6 @@ impl SpriteFile {
                 .expect(&format!("Can't decode frame at {}", offset)).1)
         }).collect();
 
-        for frame in &frames {
-            println!("Frame: {:?}", &frame);
-        }
-
         SpriteFile {
             pallettes: header.pallettes,
             frames: frames,
