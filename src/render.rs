@@ -4,8 +4,8 @@ use nalgebra::{Matrix, Matrix2x3, MatrixArray, Vector2, Vector3, U1, U3};
 use sprite_file::SpriteFile;
 
 const TILE_W: i32 = 64;
-const TILE_H: i32 = 48;
-const TILE_Z_OFFSET: i32 = 10;
+const TILE_H: i32 = 32;
+const TILE_Z_OFFSET: i32 = 48 - 32; // TODO: figure out
 
 type TileCoordinates = Matrix<i32, U3, U1, MatrixArray<i32, U3, U1>>;
 
