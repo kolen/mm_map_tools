@@ -4,14 +4,16 @@ extern crate image;
 extern crate mm_map_tools;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gtk::prelude::*;
-use gtk::{Image, ScrolledWindow, Window, WindowType};
+use gtk::{
+    ApplicationWindow, Builder, FileChooserAction, FileChooserDialog, Image, ResponseType, Window,
+};
 use mm_map_tools::decompress::read_decompressed;
 use mm_map_tools::map_section::MapSection;
 use mm_map_tools::render::render_map_section;
 use mm_map_tools::sprite_file::SpriteFile;
 use std::env;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 fn render_map() -> image::RgbaImage {
     let map_section_path1 = env::var("MAP_SECTION").unwrap();
@@ -35,26 +37,37 @@ fn pixbuf() -> Pixbuf {
     Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
-fn main() {
-    gtk::init().unwrap();
+fn create_main_window(mm_path: &PathBuf) -> ApplicationWindow {
+    let glade_src = include_str!("viewer.glade");
+    let builder = Builder::new();
+    builder.add_from_string(glade_src).unwrap();
 
-    let window = Window::new(WindowType::Toplevel);
-    window.set_title("Magic & Mayhem map section viewer");
-    window.set_default_size(1024, 768);
-
-    let pb = pixbuf();
-
-    let scroller = ScrolledWindow::new(None, None);
-    let image = Image::new_from_pixbuf(&pb);
-    scroller.add(&image);
-    window.add(&scroller);
-
-    window.show_all();
+    let window: ApplicationWindow = builder.get_object("main_window").unwrap();
+    let image: Image = builder.get_object("map_image").unwrap();
+    let pixbuf = pixbuf();
+    image.set_from_pixbuf(Some(&pixbuf));
 
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
         Inhibit(false)
     });
+    window
+}
 
-    gtk::main();
+fn main() {
+    gtk::init().unwrap();
+
+    let dir_chooser = FileChooserDialog::with_buttons::<Window>(
+        Some("Select Magic & Mayhem directory"),
+        None,
+        FileChooserAction::SelectFolder,
+        &[("_Open", ResponseType::Accept)],
+    );
+    if dir_chooser.run() == ResponseType::Accept.into() {
+        let mm_path = dir_chooser.get_filename().unwrap();
+        dir_chooser.destroy();
+        let window = create_main_window(&mm_path);
+        window.show_all();
+        gtk::main();
+    }
 }
