@@ -3,7 +3,6 @@
 <interface>
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkTreeStore" id="map_group_store"/>
-  <object class="GtkListStore" id="map_section_store"/>
   <object class="GtkAdjustment" id="max_layer">
     <property name="upper">100</property>
     <property name="value">100</property>
@@ -38,6 +37,9 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="model">map_group_store</property>
+                <child>
+                  <object class="GtkCellRendererText"/>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -49,9 +51,16 @@
               <object class="GtkTreeView" id="map_section_selector">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="model">map_section_store</property>
+                <property name="headers_visible">False</property>
+                <property name="show_expanders">False</property>
                 <child internal-child="selection">
                   <object class="GtkTreeSelection"/>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn">
+                    <property name="resizable">True</property>
+                    <property name="title" translatable="yes">column</property>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -147,4 +156,5 @@
       </object>
     </child>
   </object>
+  <object class="GtkListStore" id="section_store"/>
 </interface>

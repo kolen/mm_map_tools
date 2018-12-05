@@ -5,7 +5,8 @@ extern crate mm_map_tools;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gtk::prelude::*;
 use gtk::{
-    ApplicationWindow, Builder, FileChooserAction, FileChooserDialog, Image, ResponseType, Window,
+    ApplicationWindow, Builder, CellRendererText, FileChooserAction, FileChooserDialog, Image,
+    ListStore, ResponseType, TreeView, Window,
 };
 use mm_map_tools::decompress::read_decompressed;
 use mm_map_tools::map_section::MapSection;
@@ -37,7 +38,7 @@ fn pixbuf() -> Pixbuf {
     Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
-fn create_main_window(mm_path: &PathBuf) -> ApplicationWindow {
+fn create_main_window() -> ApplicationWindow {
     let glade_src = include_str!("viewer.glade");
     let builder = Builder::new();
     builder.add_from_string(glade_src).unwrap();
@@ -46,6 +47,18 @@ fn create_main_window(mm_path: &PathBuf) -> ApplicationWindow {
     let image: Image = builder.get_object("map_image").unwrap();
     let pixbuf = pixbuf();
     image.set_from_pixbuf(Some(&pixbuf));
+
+    let section_store = ListStore::new(&[String::static_type()]);
+    //let section_store: ListStore = builder.get_object("section_store").unwrap();
+    section_store.insert_with_values(None, &[0], &[&"Lol"]);
+
+    let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
+    map_section_selector.set_model(&section_store);
+
+    let column = map_section_selector.get_column(0).unwrap();
+    let cell_renderer = CellRendererText::new();
+    column.pack_start(&cell_renderer, true);
+    column.add_attribute(&cell_renderer, "text", 0);
 
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
@@ -63,10 +76,12 @@ fn main() {
         FileChooserAction::SelectFolder,
         &[("_Open", ResponseType::Accept)],
     );
-    if dir_chooser.run() == ResponseType::Accept.into() {
-        let mm_path = dir_chooser.get_filename().unwrap();
-        dir_chooser.destroy();
-        let window = create_main_window(&mm_path);
+    if true
+    /* dir_chooser.run() == ResponseType::Accept.into() */
+    {
+        //let mm_path = dir_chooser.get_filename().unwrap();
+        //dir_chooser.destroy();
+        let window = create_main_window();
         window.show_all();
         gtk::main();
     }
