@@ -38,6 +38,12 @@ fn pixbuf() -> Pixbuf {
     Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
+fn create_map_section_list() -> ListStore {
+    let store = ListStore::new(&[String::static_type()]);
+    store.insert_with_values(None, &[0], &[&"Lol"]);
+    store
+}
+
 fn create_main_window() -> ApplicationWindow {
     let glade_src = include_str!("viewer.glade");
     let builder = Builder::new();
@@ -48,11 +54,8 @@ fn create_main_window() -> ApplicationWindow {
     let pixbuf = pixbuf();
     image.set_from_pixbuf(Some(&pixbuf));
 
-    let section_store = ListStore::new(&[String::static_type()]);
-    //let section_store: ListStore = builder.get_object("section_store").unwrap();
-    section_store.insert_with_values(None, &[0], &[&"Lol"]);
-
     let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
+    let section_store = create_map_section_list();
     map_section_selector.set_model(&section_store);
 
     let column = map_section_selector.get_column(0).unwrap();
