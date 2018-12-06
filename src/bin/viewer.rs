@@ -113,6 +113,12 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let map_group_store = create_map_group_list(mm_path);
     map_group_selector.set_model(&map_group_store);
 
+    map_group_selector.connect_changed(move |map_group_selector| {
+        let iter = map_group_selector.get_active_iter().unwrap();
+        let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
+        println!("Active: {:?}", group_segment);
+    });
+
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
         Inhibit(false)
