@@ -13,6 +13,7 @@ use mm_map_tools::map_section::MapSection;
 use mm_map_tools::render::render_map_section;
 use mm_map_tools::sprite_file::SpriteFile;
 use std::env;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
@@ -38,13 +39,24 @@ fn pixbuf() -> Pixbuf {
     Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
-fn create_map_section_list() -> ListStore {
+fn create_map_section_list(mm_path: &Path) -> ListStore {
+    let map_section_dir = mm_path.join("Realms/Celtic/Forest");
     let store = ListStore::new(&[String::static_type()]);
-    store.insert_with_values(None, &[0], &[&"Lol"]);
+    for entry in map_section_dir.read_dir().unwrap() {
+        let entry_path = entry.unwrap().path();
+        if entry_path.extension() == Some(OsStr::new("map")) {
+            let name = entry_path
+                .file_stem()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned();
+            store.insert_with_values(None, &[0], &[&name]);
+        }
+    }
     store
 }
 
-fn create_main_window() -> ApplicationWindow {
+fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let glade_src = include_str!("viewer.glade");
     let builder = Builder::new();
     builder.add_from_string(glade_src).unwrap();
@@ -55,7 +67,7 @@ fn create_main_window() -> ApplicationWindow {
     image.set_from_pixbuf(Some(&pixbuf));
 
     let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
-    let section_store = create_map_section_list();
+    let section_store = create_map_section_list(mm_path);
     map_section_selector.set_model(&section_store);
 
     let column = map_section_selector.get_column(0).unwrap();
@@ -83,8 +95,10 @@ fn main() {
     /* dir_chooser.run() == ResponseType::Accept.into() */
     {
         //let mm_path = dir_chooser.get_filename().unwrap();
+        let mm_path_str = env::var("MM_PATH").unwrap();
+        let mm_path = Path::new(&mm_path_str);
         //dir_chooser.destroy();
-        let window = create_main_window();
+        let window = create_main_window(mm_path);
         window.show_all();
         gtk::main();
     }
