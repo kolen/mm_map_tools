@@ -5,8 +5,8 @@ extern crate mm_map_tools;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gtk::prelude::*;
 use gtk::{
-    ApplicationWindow, Builder, CellRendererText, FileChooserAction, FileChooserDialog, Image,
-    ListStore, ResponseType, TreeView, Window,
+    ApplicationWindow, Builder, CellRendererText, ComboBox, FileChooserAction, FileChooserDialog,
+    Image, ListStore, ResponseType, TreeView, Window,
 };
 use mm_map_tools::decompress::read_decompressed;
 use mm_map_tools::map_section::MapSection;
@@ -40,6 +40,7 @@ fn pixbuf() -> Pixbuf {
 }
 
 fn create_map_section_list(mm_path: &Path) -> ListStore {
+    // TODO: error handling
     let map_section_dir = mm_path.join("Realms/Celtic/Forest");
     let store = ListStore::new(&[String::static_type()]);
     for entry in map_section_dir.read_dir().unwrap() {
@@ -47,6 +48,37 @@ fn create_map_section_list(mm_path: &Path) -> ListStore {
         if entry_path.extension() == Some(OsStr::new("map")) {
             let name = entry_path
                 .file_stem()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned();
+            store.insert_with_values(None, &[0], &[&name]);
+        }
+    }
+    store
+}
+
+fn create_map_group_list(mm_path: &Path) -> ListStore {
+    // TODO: error handling
+    let store = ListStore::new(&[String::static_type()]);
+    let map_groups_dir = mm_path.join("Realms");
+    for realm_entry in map_groups_dir.read_dir().unwrap() {
+        if !realm_entry.as_ref().unwrap().file_type().unwrap().is_dir() {
+            continue;
+        }
+        for subrealm_entry in realm_entry.unwrap().path().read_dir().unwrap() {
+            if !subrealm_entry
+                .as_ref()
+                .unwrap()
+                .file_type()
+                .unwrap()
+                .is_dir()
+            {
+                continue;
+            }
+            let name: String = subrealm_entry
+                .unwrap()
+                .path()
+                .strip_prefix(&mm_path)
                 .unwrap()
                 .to_string_lossy()
                 .into_owned();
@@ -67,13 +99,19 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     image.set_from_pixbuf(Some(&pixbuf));
 
     let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
-    let section_store = create_map_section_list(mm_path);
-    map_section_selector.set_model(&section_store);
-
     let column = map_section_selector.get_column(0).unwrap();
     let cell_renderer = CellRendererText::new();
     column.pack_start(&cell_renderer, true);
     column.add_attribute(&cell_renderer, "text", 0);
+    let section_store = create_map_section_list(mm_path);
+    map_section_selector.set_model(&section_store);
+
+    let map_group_selector: ComboBox = builder.get_object("map_group_selector").unwrap();
+    let cell_renderer_map_group = CellRendererText::new();
+    map_group_selector.pack_start(&cell_renderer_map_group, true);
+    map_group_selector.add_attribute(&cell_renderer_map_group, "text", 0);
+    let map_group_store = create_map_group_list(mm_path);
+    map_group_selector.set_model(&map_group_store);
 
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
