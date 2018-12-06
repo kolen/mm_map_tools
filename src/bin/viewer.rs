@@ -12,27 +12,37 @@ use mm_map_tools::decompress::read_decompressed;
 use mm_map_tools::map_section::MapSection;
 use mm_map_tools::render::render_map_section;
 use mm_map_tools::sprite_file::SpriteFile;
+use std::cell::RefCell;
 use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
-fn render_map() -> image::RgbaImage {
-    let map_section_path1 = env::var("MAP_SECTION").unwrap();
-    let map_section_path = Path::new(&map_section_path1);
-    let sprites_path = map_section_path
+fn map_section_path(mm_path: &Path, map_group: &str, map_section: &str) -> PathBuf {
+    mm_path
+        .join("Realms")
+        .join(&map_group)
+        .join(&map_section)
+        .with_extension("map")
+}
+
+fn render_map_image(mm_path: &Path, map_group: &str, map_section: &str) -> image::RgbaImage {
+    let map_section_path_1 = map_section_path(&mm_path, &map_group, &map_section);
+    println!("{:?}", &map_section_path_1);
+    let sprites_path = map_section_path_1
         .parent()
         .unwrap()
         .join(Path::new("Terrain.spr"));
 
-    let map_section = MapSection::from_contents(read_decompressed(map_section_path).unwrap());
+    let map_section = MapSection::from_contents(read_decompressed(map_section_path_1).unwrap());
     let sprites = SpriteFile::parse(File::open(sprites_path).unwrap());
 
     render_map_section(&map_section, &sprites)
 }
 
-fn pixbuf() -> Pixbuf {
-    let map_image = render_map();
+fn render_map(mm_path: &Path, map_group: &str, map_section: &str) -> Pixbuf {
+    let map_image = render_map_image(&mm_path, &map_group, &map_section);
     let width = map_image.width() as i32;
     let height = map_image.height() as i32;
     let raw = map_image.into_raw();
@@ -108,8 +118,6 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let window: ApplicationWindow = builder.get_object("main_window").unwrap();
     let image: Image = builder.get_object("map_image").unwrap();
-    let pixbuf = pixbuf();
-    image.set_from_pixbuf(Some(&pixbuf));
 
     let map_group_selector: ComboBox = builder.get_object("map_group_selector").unwrap();
     map_group_selector_init(&map_group_selector);
@@ -121,21 +129,33 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let section_store = create_map_section_list(&mm_path, "Celtic/Forest");
     map_section_selector.set_model(&section_store);
 
+    let current_group = Rc::new(RefCell::new("Celtic/Forest".to_string()));
+    let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
+
+    let map_image = render_map(mm_path, &current_group.borrow(), &current_section.borrow());
+    image.set_from_pixbuf(Some(&map_image));
+
+    // TODO: find ways to manage these nasty GObject clones to use in closures
     let mm_path_2 = mm_path.to_path_buf();
+    let mm_path_3 = mm_path.to_path_buf();
     let map_section_selector_2 = map_section_selector.clone();
+    let current_group_2 = current_group.clone();
     map_group_selector.connect_changed(move |map_group_selector| {
         let iter = map_group_selector.get_active_iter().unwrap();
         let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
         let section_store = create_map_section_list(&mm_path_2, &group_segment);
         map_section_selector_2.set_model(&section_store);
-        println!("Active: {:?}", group_segment);
+        current_group.replace(group_segment.to_string());
     });
 
     map_section_selector.connect_cursor_changed(move |map_section_selector| {
         let selection = map_section_selector.get_selection();
         if let Some((model, iter)) = selection.get_selected() {
             let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
-            println!("Active: {:?}", section_segment);
+            current_section.replace(section_segment.to_string());
+
+            let map_image = render_map(&mm_path_3, &current_group_2.borrow(), &section_segment);
+            image.set_from_pixbuf(Some(&map_image));
         }
     });
 
