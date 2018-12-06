@@ -119,6 +119,14 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
         println!("Active: {:?}", group_segment);
     });
 
+    map_section_selector.connect_cursor_changed(move |map_section_selector| {
+        let selection = map_section_selector.get_selection();
+        if let Some((model, iter)) = selection.get_selected() {
+            let section_segment = section_store.get_value(&iter, 0).get::<String>().unwrap();
+            println!("Active: {:?}", section_segment);
+        }
+    });
+
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
         Inhibit(false)
