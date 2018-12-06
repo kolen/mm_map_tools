@@ -88,6 +88,19 @@ fn create_map_group_list(mm_path: &Path) -> ListStore {
     store
 }
 
+fn map_group_selector_init(map_group_selector: &ComboBox) {
+    let cell_renderer_map_group = CellRendererText::new();
+    map_group_selector.pack_start(&cell_renderer_map_group, true);
+    map_group_selector.add_attribute(&cell_renderer_map_group, "text", 0);
+}
+
+fn map_section_selector_init(map_section_selector: &TreeView) {
+    let column = map_section_selector.get_column(0).unwrap();
+    let cell_renderer = CellRendererText::new();
+    column.pack_start(&cell_renderer, true);
+    column.add_attribute(&cell_renderer, "text", 0);
+}
+
 fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let glade_src = include_str!("viewer.glade");
     let builder = Builder::new();
@@ -99,17 +112,12 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     image.set_from_pixbuf(Some(&pixbuf));
 
     let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
-    let column = map_section_selector.get_column(0).unwrap();
-    let cell_renderer = CellRendererText::new();
-    column.pack_start(&cell_renderer, true);
-    column.add_attribute(&cell_renderer, "text", 0);
+    map_section_selector_init(&map_section_selector);
     let section_store = create_map_section_list(mm_path);
     map_section_selector.set_model(&section_store);
 
     let map_group_selector: ComboBox = builder.get_object("map_group_selector").unwrap();
-    let cell_renderer_map_group = CellRendererText::new();
-    map_group_selector.pack_start(&cell_renderer_map_group, true);
-    map_group_selector.add_attribute(&cell_renderer_map_group, "text", 0);
+    map_group_selector_init(&map_group_selector);
     let map_group_store = create_map_group_list(mm_path);
     map_group_selector.set_model(&map_group_store);
 
