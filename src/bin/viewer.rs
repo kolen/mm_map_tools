@@ -78,7 +78,7 @@ fn create_map_group_list(mm_path: &Path) -> ListStore {
             let name: String = subrealm_entry
                 .unwrap()
                 .path()
-                .strip_prefix(&mm_path)
+                .strip_prefix(&map_groups_dir)
                 .unwrap()
                 .to_string_lossy()
                 .into_owned();
