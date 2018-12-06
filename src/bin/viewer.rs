@@ -39,9 +39,9 @@ fn pixbuf() -> Pixbuf {
     Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
-fn create_map_section_list(mm_path: &Path) -> ListStore {
+fn create_map_section_list(mm_path: &Path, map_group: &str) -> ListStore {
     // TODO: error handling
-    let map_section_dir = mm_path.join("Realms/Celtic/Forest");
+    let map_section_dir = mm_path.join("Realms").join(map_group);
     let store = ListStore::new(&[String::static_type()]);
     for entry in map_section_dir.read_dir().unwrap() {
         let entry_path = entry.unwrap().path();
@@ -111,26 +111,30 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let pixbuf = pixbuf();
     image.set_from_pixbuf(Some(&pixbuf));
 
-    let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
-    map_section_selector_init(&map_section_selector);
-    let section_store = create_map_section_list(mm_path);
-    map_section_selector.set_model(&section_store);
-
     let map_group_selector: ComboBox = builder.get_object("map_group_selector").unwrap();
     map_group_selector_init(&map_group_selector);
-    let map_group_store = create_map_group_list(mm_path);
+    let map_group_store = create_map_group_list(&mm_path);
     map_group_selector.set_model(&map_group_store);
 
+    let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
+    map_section_selector_init(&map_section_selector);
+    let section_store = create_map_section_list(&mm_path, "Celtic/Forest");
+    map_section_selector.set_model(&section_store);
+
+    let mm_path_2 = mm_path.to_path_buf();
+    let map_section_selector_2 = map_section_selector.clone();
     map_group_selector.connect_changed(move |map_group_selector| {
         let iter = map_group_selector.get_active_iter().unwrap();
         let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
+        let section_store = create_map_section_list(&mm_path_2, &group_segment);
+        map_section_selector_2.set_model(&section_store);
         println!("Active: {:?}", group_segment);
     });
 
     map_section_selector.connect_cursor_changed(move |map_section_selector| {
         let selection = map_section_selector.get_selection();
         if let Some((model, iter)) = selection.get_selected() {
-            let section_segment = section_store.get_value(&iter, 0).get::<String>().unwrap();
+            let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
             println!("Active: {:?}", section_segment);
         }
     });
