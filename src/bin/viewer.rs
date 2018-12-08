@@ -7,7 +7,7 @@ use gdk_pixbuf::{Colorspace, Pixbuf};
 use gtk::prelude::*;
 use gtk::{
     ApplicationWindow, Builder, CellRendererText, ComboBox, FileChooserAction, FileChooserDialog,
-    Image, ListStore, ResponseType, TreeView, Window,
+    Image, ListStore, ResponseType, Spinner, TreeView, Window,
 };
 use mm_map_tools::decompress::read_decompressed;
 use mm_map_tools::map_section::MapSection;
@@ -151,6 +151,8 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
         current_group.replace(group_segment.to_string());
     });
 
+    let map_rendering_spinner: Spinner = builder.get_object("map_rendering_spinner").unwrap();
+
     map_section_selector.connect_cursor_changed(move |map_section_selector| {
         let selection = map_section_selector.get_selection();
         if let Some((model, iter)) = selection.get_selected() {
@@ -161,12 +163,16 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
             let (images_channel_tx, images_channel_rx) = mpsc::channel();
             let image_2 = image.clone();
+            let map_rendering_spinner_2 = map_rendering_spinner.clone();
 
             gtk::timeout_add(100, move || {
                 let mut has_images = false;
+                map_rendering_spinner_2.start();
+
                 while let Ok(image) = images_channel_rx.try_recv() {
                     let pixbuf = image_to_pixbuf(image);
                     image_2.set_from_pixbuf(Some(&pixbuf));
+                    map_rendering_spinner_2.stop();
                     has_images = true
                 }
                 Continue(!has_images)
