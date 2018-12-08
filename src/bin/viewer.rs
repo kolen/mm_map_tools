@@ -1,4 +1,5 @@
 extern crate gdk_pixbuf;
+extern crate glib;
 extern crate gtk;
 extern crate image;
 extern crate mm_map_tools;
@@ -18,6 +19,8 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::mpsc;
+use std::thread;
 
 fn map_section_path(mm_path: &Path, map_group: &str, map_section: &str) -> PathBuf {
     mm_path
@@ -27,7 +30,7 @@ fn map_section_path(mm_path: &Path, map_group: &str, map_section: &str) -> PathB
         .with_extension("map")
 }
 
-fn render_map_image(mm_path: &Path, map_group: &str, map_section: &str) -> image::RgbaImage {
+fn render_map(mm_path: &Path, map_group: &str, map_section: &str) -> image::RgbaImage {
     let map_section_path_1 = map_section_path(&mm_path, &map_group, &map_section);
     println!("{:?}", &map_section_path_1);
     let sprites_path = map_section_path_1
@@ -41,11 +44,10 @@ fn render_map_image(mm_path: &Path, map_group: &str, map_section: &str) -> image
     render_map_section(&map_section, &sprites)
 }
 
-fn render_map(mm_path: &Path, map_group: &str, map_section: &str) -> Pixbuf {
-    let map_image = render_map_image(&mm_path, &map_group, &map_section);
-    let width = map_image.width() as i32;
-    let height = map_image.height() as i32;
-    let raw = map_image.into_raw();
+fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
+    let width = image.width() as i32;
+    let height = image.height() as i32;
+    let raw = image.into_raw();
     Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
@@ -133,7 +135,8 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
 
     let map_image = render_map(mm_path, &current_group.borrow(), &current_section.borrow());
-    image.set_from_pixbuf(Some(&map_image));
+    let pixbuf = image_to_pixbuf(map_image);
+    image.set_from_pixbuf(Some(&pixbuf));
 
     // TODO: find ways to manage these nasty GObject clones to use in closures
     let mm_path_2 = mm_path.to_path_buf();
@@ -154,8 +157,28 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
             current_section.replace(section_segment.to_string());
 
-            let map_image = render_map(&mm_path_3, &current_group_2.borrow(), &section_segment);
-            image.set_from_pixbuf(Some(&map_image));
+            let mm_path_4 = mm_path_3.clone();
+
+            let (images_channel_tx, images_channel_rx) = mpsc::channel();
+            let image_2 = image.clone();
+
+            gtk::timeout_add(100, move || {
+                let mut has_images = false;
+                while let Ok(image) = images_channel_rx.try_recv() {
+                    let pixbuf = image_to_pixbuf(image);
+                    image_2.set_from_pixbuf(Some(&pixbuf));
+                    has_images = true
+                }
+                Continue(!has_images)
+            });
+
+            let group_copy = current_group_2.borrow().clone();
+            let section_copy = section_segment.clone();
+
+            thread::spawn(move || {
+                let map_image = render_map(&mm_path_4, &group_copy, &section_copy);
+                images_channel_tx.send(map_image).unwrap();
+            });
         }
     });
 

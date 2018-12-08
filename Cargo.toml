@@ -13,6 +13,7 @@ byteorder = "1.2.7"
 lazy_static = "1.2.0"
 nalgebra = "0.16"
 gdk-pixbuf = "*"
+glib = "*"
 
 [dependencies.gtk]
 version = "0.5.0"
