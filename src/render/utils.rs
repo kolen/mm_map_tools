@@ -1,5 +1,5 @@
 use decompress::read_decompressed;
-use render::{render_map_section, MapSection};
+use render::{render_map_section, MapSection, RenderOptions};
 use sprite_file::SpriteFile;
 use std::error;
 use std::fs::File;
@@ -77,6 +77,7 @@ impl Renderer {
         &self,
         map_group: &str,
         map_section: &str,
+        options: &RenderOptions,
     ) -> Result<image::RgbaImage, Box<error::Error>> {
         let map_section_path_1 = self.section_path(&map_group, &map_section);
         let sprites_path = map_section_path_1
@@ -103,8 +104,11 @@ impl Renderer {
         )?;
 
         eprintln!("Rendering {}/{}", map_group, map_section);
-        let image =
-            render_map_section(&new_cache_contents.map_section, &new_cache_contents.sprites);
+        let image = render_map_section(
+            &new_cache_contents.map_section,
+            &new_cache_contents.sprites,
+            options,
+        );
         *cache_writer = Some(new_cache_contents);
         Ok(image)
     }

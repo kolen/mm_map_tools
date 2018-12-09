@@ -2,6 +2,7 @@ use image;
 use map_section::MapSection;
 use nalgebra::{Matrix, Matrix2, Matrix2x3, MatrixArray, Vector2, Vector3, U1, U3};
 use sprite_file::SpriteFile;
+use std::cmp;
 
 pub mod utils;
 
@@ -48,6 +49,16 @@ struct CanvasSize {
     center: Vector2<i32>,
 }
 
+pub struct RenderOptions {
+    pub max_layer: u32,
+}
+
+impl RenderOptions {
+    pub fn default() -> Self {
+        RenderOptions { max_layer: 255 }
+    }
+}
+
 impl CanvasSize {
     fn for_map_section(map_section: &MapSection) -> Self {
         let size = Vector2::new(
@@ -84,8 +95,15 @@ fn project(tile_coordinates: TileCoordinates) -> Vector2<i32> {
     projection * tile_coordinates
 }
 
-fn map_rendering_order<'a>(map_section: &'a MapSection) -> impl Iterator<Item = TileCoordinates> {
-    let (sx, sy, sz) = (map_section.size_x, map_section.size_y, map_section.size_z);
+fn map_rendering_order<'a>(
+    map_section: &'a MapSection,
+    max_z: u32,
+) -> impl Iterator<Item = TileCoordinates> {
+    let (sx, sy, sz) = (
+        map_section.size_x,
+        map_section.size_y,
+        cmp::min(map_section.size_z, max_z),
+    );
     (0..sz).flat_map(move |z| {
         (0..sx).flat_map(move |x| (0..sy).map(move |y| Vector3::new(x as i32, y as i32, z as i32)))
     })
@@ -136,10 +154,14 @@ fn draw_tile(
     )
 }
 
-pub fn render_map_section(map_section: &MapSection, sprites: &SpriteFile) -> image::RgbaImage {
+pub fn render_map_section(
+    map_section: &MapSection,
+    sprites: &SpriteFile,
+    options: &RenderOptions,
+) -> image::RgbaImage {
     let canvas_size = CanvasSize::for_map_section(map_section);
     let mut canvas = image::RgbaImage::new(canvas_size.size.x, canvas_size.size.y);
-    for tile_coordinates in map_rendering_order(map_section) {
+    for tile_coordinates in map_rendering_order(map_section, options.max_layer) {
         draw_tile(
             &mut canvas,
             &sprites,
@@ -173,6 +195,6 @@ mod tests {
         let sprites = SpriteFile::parse(
             File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap(),
         );
-        render_map_section(&map_section, &sprites);
+        render_map_section(&map_section, &sprites, &RenderOptions::default());
     }
 }
