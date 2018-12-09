@@ -48,16 +48,13 @@ struct CanvasSize {
 
 impl CanvasSize {
     fn for_map_section(map_section: &MapSection) -> Self {
-        assert_eq!(
-            map_section.size_x, map_section.size_y,
-            "Maps with size_x != size_y not supported"
-        );
         let size = Vector2::new(
             (map_section.size_x + map_section.size_y) * TILE_HALF_W as u32,
-            map_section.size_x * TILE_H as u32 + map_section.size_z * TILE_Z_OFFSET as u32,
+            (map_section.size_x + map_section.size_y) * TILE_HALF_H as u32
+                + map_section.size_z * TILE_Z_OFFSET as u32,
         );
         let center = Vector2::new(
-            map_section.size_x as i32 * TILE_HALF_W,
+            map_section.size_y as i32 * TILE_HALF_W,
             map_section.size_z as i32 * TILE_Z_OFFSET,
         );
         CanvasSize {
@@ -150,7 +147,8 @@ pub fn render_map_section(map_section: &MapSection, sprites: &SpriteFile) -> ima
                     tile_coordinates.x as u32,
                     tile_coordinates.y as u32,
                     tile_coordinates.z as u32,
-                ).id,
+                )
+                .id,
             canvas_size.center,
         );
     }
