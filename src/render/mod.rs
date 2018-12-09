@@ -3,6 +3,8 @@ use map_section::MapSection;
 use nalgebra::{Matrix, Matrix2, Matrix2x3, MatrixArray, Vector2, Vector3, U1, U3};
 use sprite_file::SpriteFile;
 
+pub mod utils;
+
 const TILE_W: i32 = 64;
 const TILE_H: i32 = 32;
 const TILE_HALF_W: i32 = TILE_W / 2;
