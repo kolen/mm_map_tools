@@ -10,6 +10,7 @@ use gtk::{
     Image, ListStore, ResponseType, Spinner, TreeView, Window,
 };
 use mm_map_tools::render::utils::Renderer;
+use mm_map_tools::render::RenderOptions;
 use std::cell::RefCell;
 use std::env;
 use std::ffi::OsStr;
@@ -89,6 +90,62 @@ fn map_section_selector_init(map_section_selector: &TreeView) {
     column.add_attribute(&cell_renderer, "text", 0);
 }
 
+fn update_map_display(
+    window: ApplicationWindow,
+    image_view: gtk::Image,
+    map_rendering_spinner: gtk::Spinner,
+    renderer: Arc<Renderer>,
+    map_group: &str,
+    map_section: &str,
+    max_layer: u32,
+) {
+    let (images_channel_tx, images_channel_rx) =
+        mpsc::channel::<Result<image::RgbaImage, String>>();
+
+    gtk::timeout_add(100, move || {
+        let mut has_images = false;
+        map_rendering_spinner.start();
+
+        while let Ok(image_result) = images_channel_rx.try_recv() {
+            match image_result {
+                Ok(image) => {
+                    let pixbuf = image_to_pixbuf(image);
+                    image_view.set_from_pixbuf(Some(&pixbuf));
+                    map_rendering_spinner.stop();
+                }
+                Err(error_message) => {
+                    let msg_box = gtk::MessageDialog::new(
+                        Some(&window),
+                        gtk::DialogFlags::MODAL,
+                        gtk::MessageType::Error,
+                        gtk::ButtonsType::Ok,
+                        &error_message,
+                    );
+                    msg_box.run();
+                    msg_box.destroy();
+                    map_rendering_spinner.stop();
+                }
+            }
+            has_images = true
+        }
+        Continue(!has_images)
+    });
+
+    let (map_group_1, map_section_1) = (map_group.to_owned(), map_section.to_owned());
+    thread::spawn(move || {
+        // Errors itself don't implement Send, so we'll send strings
+        let time = SystemTime::now();
+        let render_options = RenderOptions {
+            max_layer: max_layer,
+        };
+        let map_image = renderer
+            .render(&map_group_1, &map_section_1, &render_options)
+            .map_err(|e| format!("Error loading map section:\n{}", e));
+        eprintln!("Rendering took {:?}", time.elapsed().unwrap());
+        images_channel_tx.send(map_image).unwrap();
+    });
+}
+
 fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let glade_src = include_str!("viewer.glade");
     let builder = Builder::new();
@@ -109,6 +166,7 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let current_group = Rc::new(RefCell::new("Celtic/Forest".to_string()));
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
+    let current_max_layer = Rc::new(RefCell::new(100));
 
     let renderer = Arc::new(Renderer::new(mm_path));
 
@@ -126,6 +184,8 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let map_rendering_spinner: Spinner = builder.get_object("map_rendering_spinner").unwrap();
 
+    let current_max_layer_2 = current_max_layer.clone();
+    let current_max_layer_3 = current_max_layer_2.clone();
     let window_1 = window.clone();
     map_section_selector.connect_cursor_changed(move |map_section_selector| {
         let selection = map_section_selector.get_selection();
@@ -133,55 +193,31 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
             current_section.replace(section_segment.to_string());
 
-            let (images_channel_tx, images_channel_rx) =
-                mpsc::channel::<Result<image::RgbaImage, String>>();
-            let image_2 = image.clone();
-            let map_rendering_spinner_2 = map_rendering_spinner.clone();
-
+            let image_1 = image.clone();
+            let map_rendering_spinner_1 = map_rendering_spinner.clone();
+            let renderer_1 = renderer.clone();
+            let current_group_outer = current_group_2.clone();
+            let current_section_outer = current_section.clone();
+            let current_max_layer_outer = current_max_layer_2.clone();
+            let current_group_3: String = current_group_outer.borrow().clone();
+            let current_section_1: String = current_section_outer.borrow().clone();
+            let current_max_layer_3: u32 = current_max_layer_outer.borrow().clone();
             let window_2 = window_1.clone();
-            gtk::timeout_add(100, move || {
-                let mut has_images = false;
-                map_rendering_spinner_2.start();
-
-                while let Ok(image_result) = images_channel_rx.try_recv() {
-                    match image_result {
-                        Ok(image) => {
-                            let pixbuf = image_to_pixbuf(image);
-                            image_2.set_from_pixbuf(Some(&pixbuf));
-                            map_rendering_spinner_2.stop();
-                        }
-                        Err(error_message) => {
-                            let msg_box = gtk::MessageDialog::new(
-                                Some(&window_2),
-                                gtk::DialogFlags::MODAL,
-                                gtk::MessageType::Error,
-                                gtk::ButtonsType::Ok,
-                                &error_message,
-                            );
-                            msg_box.run();
-                            msg_box.destroy();
-                            map_rendering_spinner_2.stop();
-                        }
-                    }
-                    has_images = true
-                }
-                Continue(!has_images)
-            });
-
-            let group_copy = current_group_2.borrow().clone();
-            let section_copy = section_segment.clone();
-
-            let renderer_copy = renderer.clone();
-            thread::spawn(move || {
-                // Errors itself don't implement Send, so we'll send strings
-                let time = SystemTime::now();
-                let map_image = renderer_copy
-                    .render(&group_copy, &section_copy)
-                    .map_err(|e| format!("Error loading map section:\n{}", e));
-                eprintln!("Rendering took {:?}", time.elapsed().unwrap());
-                images_channel_tx.send(map_image).unwrap();
-            });
+            update_map_display(
+                window_2,
+                image_1,
+                map_rendering_spinner_1,
+                renderer_1,
+                &current_group_3,
+                &current_section_1,
+                current_max_layer_3,
+            );
         }
+    });
+
+    let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
+    max_layer_adjustment.connect_value_changed(move |adj| {
+        current_max_layer_3.replace(adj.get_value() as u32);
     });
 
     window.connect_delete_event(|_, _| {
