@@ -212,8 +212,8 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
                     image.clone(),
                     map_rendering_spinner.clone(),
                     renderer.clone(),
-                    &(current_group.borrow().clone()),
-                    &(current_section.borrow().clone()),
+                    &current_group.borrow().clone(),
+                    &current_section.borrow().clone(),
                     current_max_layer.borrow().clone(),
                 );
             }
