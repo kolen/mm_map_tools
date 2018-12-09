@@ -53,9 +53,9 @@ fn indexed_to_rgba(pixel: Option<u8>, pallette: Pallette) -> Rgba8 {
 impl SpriteFile {
     pub fn parse(mut file: File) -> SpriteFile {
         let mut buf: Vec<u8> = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
+        file.read_to_end(&mut buf).expect("Can't read sprite file");
 
-        let (payload, header) = header(&buf[..]).unwrap();
+        let (payload, header) = header(&buf[..]).expect("Can't parse header");
 
         let frames = header
             .frame_offsets
@@ -131,7 +131,7 @@ fn pixels(
 
     debug_assert!(bytes.len() == (width as usize) * (height as usize) * 4);
 
-    RgbaImage::from_raw(width, height, bytes).unwrap()
+    RgbaImage::from_raw(width, height, bytes).expect("Can't construct RgbaImage")
 }
 
 named_args!(
