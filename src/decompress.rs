@@ -1,5 +1,6 @@
 use byteorder::{ByteOrder, LittleEndian};
-use std::fs;
+use std::error;
+use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -55,6 +56,26 @@ pub enum DecompressError {
     ContentTooSmall,
     FileError { error: std::io::Error },
 }
+
+impl fmt::Display for DecompressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let suberror = match self {
+            DecompressError::DeobfuscateChecksumNotMatch => {
+                "Deobfuscation checksum does not match".into()
+            }
+            DecompressError::DecompressChecksumNonMatch => {
+                "Decompression checksum does not match".into()
+            }
+            DecompressError::InvalidCompressionType => "Invalid compression type".into(),
+            DecompressError::CompressionNotSupported => "Compression not supported".into(),
+            DecompressError::ContentTooSmall => "File contents are too small".into(),
+            DecompressError::FileError { error: e } => format!("File reading error: {}", e),
+        };
+        write!(f, "Decompression error: {}", suberror)
+    }
+}
+
+impl error::Error for DecompressError {}
 
 impl From<std::io::Error> for DecompressError {
     fn from(error: std::io::Error) -> Self {
