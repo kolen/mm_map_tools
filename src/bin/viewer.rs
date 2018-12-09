@@ -18,7 +18,6 @@ use std::env;
 use std::error;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io;
 use std::mem::replace;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -220,10 +219,6 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
 
     let renderer = Arc::new(Renderer::new(mm_path));
-
-    // let map_image = render_map(mm_path, &current_group.borrow(), &current_section.borrow());
-    // let pixbuf = image_to_pixbuf(map_image);
-    // image.set_from_pixbuf(Some(&pixbuf));
 
     // TODO: find ways to manage these nasty GObject clones to use in closures
     let mm_path_2 = mm_path.to_path_buf();
