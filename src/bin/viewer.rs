@@ -210,12 +210,9 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
                 let image_1 = image.clone();
                 let map_rendering_spinner_1 = map_rendering_spinner.clone();
                 let renderer_1 = renderer.clone();
-                let current_group_outer = current_group.clone();
-                let current_section_outer = current_section.clone();
-                let current_max_layer_outer = current_max_layer.clone();
-                let current_group_1: String = current_group_outer.borrow().clone();
-                let current_section_1: String = current_section_outer.borrow().clone();
-                let current_max_layer_1: u32 = current_max_layer_outer.borrow().clone();
+                let current_group_1: String = current_group.borrow().clone();
+                let current_section_1: String = current_section.borrow().clone();
+                let current_max_layer_1: u32 = current_max_layer.borrow().clone();
                 let window_1 = window.clone();
                 update_map_display(
                     window_1,
