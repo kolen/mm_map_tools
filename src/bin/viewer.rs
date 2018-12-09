@@ -20,28 +20,49 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
-fn map_section_path(mm_path: &Path, map_group: &str, map_section: &str) -> PathBuf {
-    mm_path
-        .join("Realms")
-        .join(&map_group)
-        .join(&map_section)
-        .with_extension("map")
+struct RendererCache {
+    map_group_name: String,
+    map_section_name: String,
+    map_section: MapSection,
+    sprites: SpriteFile,
 }
 
-fn render_map(mm_path: &Path, map_group: &str, map_section: &str) -> image::RgbaImage {
-    let map_section_path_1 = map_section_path(&mm_path, &map_group, &map_section);
-    println!("{:?}", &map_section_path_1);
-    let sprites_path = map_section_path_1
-        .parent()
-        .unwrap()
-        .join(Path::new("Terrain.spr"));
+struct Renderer {
+    mm_path: PathBuf,
+    renderer_cache: Option<RendererCache>,
+}
 
-    let map_section = MapSection::from_contents(read_decompressed(map_section_path_1).unwrap());
-    let sprites = SpriteFile::parse(File::open(sprites_path).unwrap());
+impl Renderer {
+    pub fn new(mm_path: &Path) -> Self {
+        Renderer {
+            mm_path: mm_path.to_path_buf(),
+            renderer_cache: None,
+        }
+    }
 
-    render_map_section(&map_section, &sprites)
+    fn section_path(&self, map_group: &str, map_section: &str) -> PathBuf {
+        self.mm_path
+            .join("Realms")
+            .join(&map_group)
+            .join(&map_section)
+            .with_extension("map")
+    }
+
+    fn render(&mut self, map_group: &str, map_section: &str) -> image::RgbaImage {
+        let map_section_path_1 = self.section_path(&map_group, &map_section);
+        let sprites_path = map_section_path_1
+            .parent()
+            .unwrap()
+            .join(Path::new("Terrain.spr"));
+
+        let map_section = MapSection::from_contents(read_decompressed(map_section_path_1).unwrap());
+        let sprites = SpriteFile::parse(File::open(sprites_path).unwrap());
+
+        render_map_section(&map_section, &sprites)
+    }
 }
 
 fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
@@ -134,13 +155,14 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let current_group = Rc::new(RefCell::new("Celtic/Forest".to_string()));
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
 
-    let map_image = render_map(mm_path, &current_group.borrow(), &current_section.borrow());
-    let pixbuf = image_to_pixbuf(map_image);
-    image.set_from_pixbuf(Some(&pixbuf));
+    let mut renderer = Arc::new(Mutex::new(Renderer::new(mm_path)));
+
+    // let map_image = render_map(mm_path, &current_group.borrow(), &current_section.borrow());
+    // let pixbuf = image_to_pixbuf(map_image);
+    // image.set_from_pixbuf(Some(&pixbuf));
 
     // TODO: find ways to manage these nasty GObject clones to use in closures
     let mm_path_2 = mm_path.to_path_buf();
-    let mm_path_3 = mm_path.to_path_buf();
     let map_section_selector_2 = map_section_selector.clone();
     let current_group_2 = current_group.clone();
     map_group_selector.connect_changed(move |map_group_selector| {
@@ -158,8 +180,6 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
         if let Some((model, iter)) = selection.get_selected() {
             let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
             current_section.replace(section_segment.to_string());
-
-            let mm_path_4 = mm_path_3.clone();
 
             let (images_channel_tx, images_channel_rx) = mpsc::channel();
             let image_2 = image.clone();
@@ -181,8 +201,12 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             let group_copy = current_group_2.borrow().clone();
             let section_copy = section_segment.clone();
 
+            let renderer_2 = renderer.clone();
             thread::spawn(move || {
-                let map_image = render_map(&mm_path_4, &group_copy, &section_copy);
+                let map_image = renderer_2
+                    .lock()
+                    .unwrap()
+                    .render(&group_copy, &section_copy);
                 images_channel_tx.send(map_image).unwrap();
             });
         }
