@@ -15,31 +15,72 @@ use mm_map_tools::render::render_map_section;
 use mm_map_tools::sprite_file::SpriteFile;
 use std::cell::RefCell;
 use std::env;
+use std::error;
 use std::ffi::OsStr;
 use std::fs::File;
+use std::io;
+use std::mem::replace;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::thread;
 
 struct RendererCache {
-    map_group_name: String,
-    map_section_name: String,
+    section_path: PathBuf,
+    sprites_path: PathBuf,
     map_section: MapSection,
     sprites: SpriteFile,
 }
 
 struct Renderer {
     mm_path: PathBuf,
-    renderer_cache: Option<RendererCache>,
+    cache: RwLock<Option<RendererCache>>,
+}
+
+fn load_sprites_and_map_section_cached<
+    L1: Fn(&Path) -> Result<MapSection, Box<error::Error>>,
+    L2: Fn(&Path) -> Result<SpriteFile, Box<error::Error>>,
+>(
+    cache: Option<RendererCache>,
+    section_path: &Path,
+    sprites_path: &Path,
+    load_section: L1,
+    load_sprites: L2,
+) -> Result<RendererCache, Box<error::Error>> {
+    match cache {
+        None => Ok(RendererCache {
+            section_path: section_path.to_path_buf(),
+            sprites_path: sprites_path.to_path_buf(),
+            map_section: load_section(section_path)?,
+            sprites: load_sprites(sprites_path)?,
+        }),
+        Some(cache) => {
+            let new_map_section = if cache.section_path == section_path {
+                cache.map_section
+            } else {
+                load_section(section_path)?
+            };
+            let new_sprites = if cache.sprites_path == sprites_path {
+                cache.sprites
+            } else {
+                load_sprites(sprites_path)?
+            };
+            Ok(RendererCache {
+                section_path: section_path.to_path_buf(),
+                sprites_path: sprites_path.to_path_buf(),
+                map_section: new_map_section,
+                sprites: new_sprites,
+            })
+        }
+    }
 }
 
 impl Renderer {
     pub fn new(mm_path: &Path) -> Self {
         Renderer {
             mm_path: mm_path.to_path_buf(),
-            renderer_cache: None,
+            cache: RwLock::new(None),
         }
     }
 
@@ -51,17 +92,40 @@ impl Renderer {
             .with_extension("map")
     }
 
-    fn render(&mut self, map_group: &str, map_section: &str) -> image::RgbaImage {
+    fn render(
+        &self,
+        map_group: &str,
+        map_section: &str,
+    ) -> Result<image::RgbaImage, Box<error::Error>> {
         let map_section_path_1 = self.section_path(&map_group, &map_section);
         let sprites_path = map_section_path_1
             .parent()
             .unwrap()
             .join(Path::new("Terrain.spr"));
 
-        let map_section = MapSection::from_contents(read_decompressed(map_section_path_1).unwrap());
-        let sprites = SpriteFile::parse(File::open(sprites_path).unwrap());
+        let mut cache_writer = self.cache.write().unwrap();
+        let old_cache_contents = replace(&mut *cache_writer, None);
+        let new_cache_contents = load_sprites_and_map_section_cached(
+            old_cache_contents,
+            &map_section_path_1,
+            &sprites_path,
+            |map_section_path| {
+                eprintln!("Loading map section {:?}", &map_section_path);
+                Ok(MapSection::from_contents(read_decompressed(
+                    map_section_path,
+                )?))
+            },
+            |sprites_path| {
+                eprintln!("Loading sprites {:?}", &sprites_path);
+                Ok(SpriteFile::parse(File::open(sprites_path)?))
+            },
+        )?;
 
-        render_map_section(&map_section, &sprites)
+        eprintln!("Rendering {}/{}", map_group, map_section);
+        let image =
+            render_map_section(&new_cache_contents.map_section, &new_cache_contents.sprites);
+        *cache_writer = Some(new_cache_contents);
+        Ok(image)
     }
 }
 
@@ -155,7 +219,7 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let current_group = Rc::new(RefCell::new("Celtic/Forest".to_string()));
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
 
-    let mut renderer = Arc::new(Mutex::new(Renderer::new(mm_path)));
+    let renderer = Arc::new(Renderer::new(mm_path));
 
     // let map_image = render_map(mm_path, &current_group.borrow(), &current_section.borrow());
     // let pixbuf = image_to_pixbuf(map_image);
@@ -175,24 +239,43 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let map_rendering_spinner: Spinner = builder.get_object("map_rendering_spinner").unwrap();
 
+    let window_1 = window.clone();
     map_section_selector.connect_cursor_changed(move |map_section_selector| {
         let selection = map_section_selector.get_selection();
         if let Some((model, iter)) = selection.get_selected() {
             let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
             current_section.replace(section_segment.to_string());
 
-            let (images_channel_tx, images_channel_rx) = mpsc::channel();
+            let (images_channel_tx, images_channel_rx) =
+                mpsc::channel::<Result<image::RgbaImage, String>>();
             let image_2 = image.clone();
             let map_rendering_spinner_2 = map_rendering_spinner.clone();
 
+            let window_2 = window_1.clone();
             gtk::timeout_add(100, move || {
                 let mut has_images = false;
                 map_rendering_spinner_2.start();
 
-                while let Ok(image) = images_channel_rx.try_recv() {
-                    let pixbuf = image_to_pixbuf(image);
-                    image_2.set_from_pixbuf(Some(&pixbuf));
-                    map_rendering_spinner_2.stop();
+                while let Ok(image_result) = images_channel_rx.try_recv() {
+                    match image_result {
+                        Ok(image) => {
+                            let pixbuf = image_to_pixbuf(image);
+                            image_2.set_from_pixbuf(Some(&pixbuf));
+                            map_rendering_spinner_2.stop();
+                        }
+                        Err(error_message) => {
+                            let msg_box = gtk::MessageDialog::new(
+                                Some(&window_2),
+                                gtk::DialogFlags::MODAL,
+                                gtk::MessageType::Error,
+                                gtk::ButtonsType::Ok,
+                                &error_message,
+                            );
+                            msg_box.run();
+                            msg_box.destroy();
+                            map_rendering_spinner_2.stop();
+                        }
+                    }
                     has_images = true
                 }
                 Continue(!has_images)
@@ -201,12 +284,12 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             let group_copy = current_group_2.borrow().clone();
             let section_copy = section_segment.clone();
 
-            let renderer_2 = renderer.clone();
+            let renderer_copy = renderer.clone();
             thread::spawn(move || {
-                let map_image = renderer_2
-                    .lock()
-                    .unwrap()
-                    .render(&group_copy, &section_copy);
+                // Errors itself don't implement Send, so we'll send strings
+                let map_image = renderer_copy
+                    .render(&group_copy, &section_copy)
+                    .map_err(|e| format!("Error loading map section:\n{}", e));
                 images_channel_tx.send(map_image).unwrap();
             });
         }
