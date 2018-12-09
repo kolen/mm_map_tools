@@ -201,7 +201,7 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let map_rendering_spinner: Spinner = builder.get_object("map_rendering_spinner").unwrap();
 
     map_section_selector.connect_cursor_changed(
-        clone!(window, current_group, current_max_layer => move |map_section_selector| {
+        clone!(window, image, map_rendering_spinner, renderer, current_group, current_section, current_max_layer => move |map_section_selector| {
             let selection = map_section_selector.get_selection();
             if let Some((model, iter)) = selection.get_selected() {
                 let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
@@ -221,9 +221,19 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     );
 
     let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
-    max_layer_adjustment.connect_value_changed(move |adj| {
+    max_layer_adjustment.connect_value_changed(clone!(window, image, map_rendering_spinner, renderer, current_group, current_section, current_max_layer => move |adj| {
         current_max_layer.replace(adj.get_value() as u32);
-    });
+
+        update_map_display(
+            window.clone(),
+            image.clone(),
+            map_rendering_spinner.clone(),
+            renderer.clone(),
+            &current_group.borrow().clone(),
+            &current_section.borrow().clone(),
+            current_max_layer.borrow().clone(),
+        );
+    }));
 
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
