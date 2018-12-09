@@ -21,6 +21,23 @@ use std::sync::Arc;
 use std::thread;
 use std::time::SystemTime;
 
+macro_rules! clone {
+    (@param _) => ( _ );
+    (@param $x:ident) => ( $x );
+    ($($n:ident),+ => move || $body:expr) => (
+        {
+            $( let $n = $n.clone(); )+
+            move || $body
+        }
+    );
+    ($($n:ident),+ => move |$($p:tt),+| $body:expr) => (
+        {
+            $( let $n = $n.clone(); )+
+            move |$(clone!(@param $p),)+| $body
+        }
+    );
+}
+
 fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
     let width = image.width() as i32;
     let height = image.height() as i32;
@@ -170,54 +187,52 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let renderer = Arc::new(Renderer::new(mm_path));
 
-    // TODO: find ways to manage these nasty GObject clones to use in closures
-    let mm_path_2 = mm_path.to_path_buf();
-    let map_section_selector_2 = map_section_selector.clone();
-    let current_group_2 = current_group.clone();
-    map_group_selector.connect_changed(move |map_group_selector| {
-        let iter = map_group_selector.get_active_iter().unwrap();
-        let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
-        let section_store = create_map_section_list(&mm_path_2, &group_segment);
-        map_section_selector_2.set_model(&section_store);
-        current_group.replace(group_segment.to_string());
-    });
+    let mm_path_buf = mm_path.to_path_buf();
+    map_group_selector.connect_changed(
+        clone!(current_group, map_section_selector => move |map_group_selector| {
+            let iter = map_group_selector.get_active_iter().unwrap();
+            let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
+            let section_store = create_map_section_list(&mm_path_buf, &group_segment);
+            map_section_selector.set_model(&section_store);
+            current_group.replace(group_segment.to_string());
+        }),
+    );
 
     let map_rendering_spinner: Spinner = builder.get_object("map_rendering_spinner").unwrap();
 
-    let current_max_layer_2 = current_max_layer.clone();
-    let current_max_layer_3 = current_max_layer_2.clone();
-    let window_1 = window.clone();
-    map_section_selector.connect_cursor_changed(move |map_section_selector| {
-        let selection = map_section_selector.get_selection();
-        if let Some((model, iter)) = selection.get_selected() {
-            let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
-            current_section.replace(section_segment.to_string());
+    map_section_selector.connect_cursor_changed(
+        clone!(window, current_group, current_max_layer => move |map_section_selector| {
+            let selection = map_section_selector.get_selection();
+            if let Some((model, iter)) = selection.get_selected() {
+                let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
+                current_section.replace(section_segment.to_string());
 
-            let image_1 = image.clone();
-            let map_rendering_spinner_1 = map_rendering_spinner.clone();
-            let renderer_1 = renderer.clone();
-            let current_group_outer = current_group_2.clone();
-            let current_section_outer = current_section.clone();
-            let current_max_layer_outer = current_max_layer_2.clone();
-            let current_group_3: String = current_group_outer.borrow().clone();
-            let current_section_1: String = current_section_outer.borrow().clone();
-            let current_max_layer_3: u32 = current_max_layer_outer.borrow().clone();
-            let window_2 = window_1.clone();
-            update_map_display(
-                window_2,
-                image_1,
-                map_rendering_spinner_1,
-                renderer_1,
-                &current_group_3,
-                &current_section_1,
-                current_max_layer_3,
-            );
-        }
-    });
+                let image_1 = image.clone();
+                let map_rendering_spinner_1 = map_rendering_spinner.clone();
+                let renderer_1 = renderer.clone();
+                let current_group_outer = current_group.clone();
+                let current_section_outer = current_section.clone();
+                let current_max_layer_outer = current_max_layer.clone();
+                let current_group_1: String = current_group_outer.borrow().clone();
+                let current_section_1: String = current_section_outer.borrow().clone();
+                let current_max_layer_1: u32 = current_max_layer_outer.borrow().clone();
+                let window_1 = window.clone();
+                update_map_display(
+                    window_1,
+                    image_1,
+                    map_rendering_spinner_1,
+                    renderer_1,
+                    &current_group_1,
+                    &current_section_1,
+                    current_max_layer_1,
+                );
+            }
+        }),
+    );
 
     let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
     max_layer_adjustment.connect_value_changed(move |adj| {
-        current_max_layer_3.replace(adj.get_value() as u32);
+        current_max_layer.replace(adj.get_value() as u32);
     });
 
     window.connect_delete_event(|_, _| {
