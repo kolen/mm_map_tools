@@ -24,6 +24,7 @@ use std::rc::Rc;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
+use std::time::SystemTime;
 
 struct RendererCache {
     section_path: PathBuf,
@@ -282,9 +283,11 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             let renderer_copy = renderer.clone();
             thread::spawn(move || {
                 // Errors itself don't implement Send, so we'll send strings
+                let time = SystemTime::now();
                 let map_image = renderer_copy
                     .render(&group_copy, &section_copy)
                     .map_err(|e| format!("Error loading map section:\n{}", e));
+                eprintln!("Rendering took {:?}", time.elapsed().unwrap());
                 images_channel_tx.send(map_image).unwrap();
             });
         }
