@@ -202,7 +202,7 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let current_group = Rc::new(RefCell::new("Celtic/Forest".to_string()));
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
-    let current_max_layer = Rc::new(RefCell::new(100));
+    let current_max_layer = Rc::new(RefCell::new(64));
 
     let renderer = Arc::new(Renderer::new(mm_path));
 
