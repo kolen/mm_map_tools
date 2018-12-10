@@ -4,8 +4,8 @@
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkTreeStore" id="map_group_store"/>
   <object class="GtkAdjustment" id="max_layer">
-    <property name="upper">64</property>
-    <property name="value">64</property>
+    <property name="upper">30</property>
+    <property name="value">30</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>

@@ -200,9 +200,11 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let section_store = create_map_section_list(&mm_path, "Celtic/Forest");
     map_section_selector.set_model(&section_store);
 
+    let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
+
     let current_group = Rc::new(RefCell::new("Celtic/Forest".to_string()));
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
-    let current_max_layer = Rc::new(RefCell::new(64));
+    let current_max_layer = Rc::new(RefCell::new(max_layer_adjustment.get_value() as u32));
 
     let renderer = Arc::new(Renderer::new(mm_path));
 
@@ -238,8 +240,6 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             }
         }),
     );
-
-    let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
 
     let update_map_display_on_max_level = debounced(500, {
         let window = window.clone();
