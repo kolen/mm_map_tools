@@ -45,6 +45,25 @@ fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
     Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
+fn debounced(timeout: u32, action: impl Fn() + 'static) -> impl Fn() + 'static {
+    let action_rc = Rc::new(action);
+    let last_invokation_id: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
+    let last_invokation_id_1 = last_invokation_id.clone();
+    move || {
+        *last_invokation_id_1.borrow_mut() += 1;
+        let current_invokation: u32 = *last_invokation_id_1.borrow();
+
+        let action_rc_1 = action_rc.clone();
+        let last_invokation_id_2 = last_invokation_id_1.clone();
+        gtk::timeout_add(timeout, move || {
+            if *last_invokation_id_2.borrow() == current_invokation {
+                action_rc_1();
+            }
+            gtk::Continue(false)
+        });
+    }
+}
+
 fn create_map_section_list(mm_path: &Path, map_group: &str) -> ListStore {
     // TODO: error handling
     let map_section_dir = mm_path.join("Realms").join(map_group);
@@ -221,19 +240,38 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     );
 
     let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
-    max_layer_adjustment.connect_value_changed(clone!(window, image, map_rendering_spinner, renderer, current_group, current_section, current_max_layer => move |adj| {
-        current_max_layer.replace(adj.get_value() as u32);
 
-        update_map_display(
-            window.clone(),
-            image.clone(),
-            map_rendering_spinner.clone(),
-            renderer.clone(),
-            &current_group.borrow().clone(),
-            &current_section.borrow().clone(),
-            current_max_layer.borrow().clone(),
-        );
-    }));
+    let update_map_display_on_max_level = debounced(500, {
+        let window = window.clone();
+        let image = image.clone();
+        let map_rendering_spinner = map_rendering_spinner.clone();
+        let renderer = renderer.clone();
+        let current_group = current_group.clone();
+        let current_section = current_section.clone();
+        let current_max_layer = current_max_layer.clone();
+        let max_layer_adjustment = max_layer_adjustment.clone();
+
+        move || {
+            let max_layer = max_layer_adjustment.get_value() as u32;
+
+            eprintln!("Max layer: {}", max_layer);
+            current_max_layer.clone().replace(max_layer);
+
+            update_map_display(
+                window.clone(),
+                image.clone(),
+                map_rendering_spinner.clone(),
+                renderer.clone(),
+                &current_group.borrow().clone(),
+                &current_section.borrow().clone(),
+                max_layer,
+            );
+        }
+    });
+
+    max_layer_adjustment.connect_value_changed(move |_adj| {
+        update_map_display_on_max_level();
+    });
 
     window.connect_delete_event(|_, _| {
         gtk::main_quit();
