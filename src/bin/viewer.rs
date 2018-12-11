@@ -280,6 +280,12 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     window
 }
 
+fn run_window(mm_path: &Path) {
+    let window = create_main_window(mm_path);
+    window.show_all();
+    gtk::main();
+}
+
 fn main() {
     gtk::init().unwrap();
 
@@ -289,15 +295,22 @@ fn main() {
         FileChooserAction::SelectFolder,
         &[("_Open", ResponseType::Accept)],
     );
-    if true
-    /* dir_chooser.run() == ResponseType::Accept.into() */
-    {
-        //let mm_path = dir_chooser.get_filename().unwrap();
-        let mm_path_str = env::var("MM_PATH").unwrap();
-        let mm_path = Path::new(&mm_path_str);
-        //dir_chooser.destroy();
-        let window = create_main_window(mm_path);
-        window.show_all();
-        gtk::main();
+
+    let mm_path = env::var("MM_PATH")
+        .ok()
+        .map(|path_s| Path::new(&path_s).to_path_buf())
+        .or_else(|| {
+            if dir_chooser.run() == ResponseType::Accept.into() {
+                Some(
+                    dir_chooser
+                        .get_filename()
+                        .expect("Can't get filename from dir chooser"),
+                )
+            } else {
+                None
+            }
+        });
+    if let Some(mm_path_1) = mm_path {
+        run_window(&mm_path_1);
     }
 }
