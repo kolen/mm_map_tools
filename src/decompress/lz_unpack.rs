@@ -4,24 +4,22 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
-#![allow(non_snake_case, non_upper_case_globals, unused_mut)]
-
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
-pub struct lz_input {
+pub struct LZInput {
     pub Ptr: *const u8,
     pub BitPtr: u8,
     pub Value: u32,
 }
 
-pub unsafe fn lz_unpack(Input: *const u8, mut Output: *mut u8, UnpackedSize: usize) {
-    let mut LZDict: [u8; 4096] = [0; 4096];
-    let mut LZInput: lz_input = lz_input {
+pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
+    let mut lz_dict: [u8; 4096] = [0; 4096];
+    let mut lz_input: LZInput = LZInput {
         Ptr: 0 as *const u8,
         BitPtr: 0,
         Value: 0,
     };
-    let mut lz: *mut lz_input = 0 as *mut lz_input;
+    let mut lz: *mut LZInput = 0 as *mut LZInput;
     let mut count: usize = 0;
     let mut bit: u8 = 0;
     let mut ptr_inc: *const u8 = 0 as *const u8;
@@ -41,8 +39,8 @@ pub unsafe fn lz_unpack(Input: *const u8, mut Output: *mut u8, UnpackedSize: usi
     let mut dict_index: i32 = 0;
     let mut count_save: usize = 0;
 
-    lz = &mut LZInput;
-    (*lz).Ptr = Input;
+    lz = &mut lz_input;
+    (*lz).Ptr = input;
     (*lz).BitPtr = 0x80i32 as u8;
     (*lz).Value = 0i32 as u32;
     count = 0;
@@ -84,11 +82,11 @@ pub unsafe fn lz_unpack(Input: *const u8, mut Output: *mut u8, UnpackedSize: usi
                     break;
                 }
             }
-            let fresh0 = Output;
-            Output = Output.offset(1);
+            let fresh0 = output;
+            output = output.offset(1);
             *fresh0 = value as u8;
             count += 1;
-            LZDict[dict_index as usize] = value as u8;
+            lz_dict[dict_index as usize] = value as u8;
             count_save = count;
             dict_index = dict_index as u16 as i32 + 1i32 & 0xfffi32
         } else {
@@ -143,18 +141,18 @@ pub unsafe fn lz_unpack(Input: *const u8, mut Output: *mut u8, UnpackedSize: usi
             back_ref_i = 0i32;
             if back_ref_len + 1i32 >= 0i32 {
                 loop {
-                    value_2 = LZDict
+                    value_2 = lz_dict
                         [(back_ref_off as u16 as i32 + back_ref_i as u16 as i32 & 0xfffi32) as usize]
                         as i32;
-                    let fresh1 = Output;
-                    Output = Output.offset(1);
+                    let fresh1 = output;
+                    output = output.offset(1);
                     *fresh1 = value_2 as u8;
                     count += 1;
                     count_save = count;
-                    if count == UnpackedSize {
+                    if count == unpacked_size {
                         return;
                     }
-                    LZDict[dict_index as usize] = value_2 as u8;
+                    lz_dict[dict_index as usize] = value_2 as u8;
                     back_ref_i += 1;
                     dict_index = dict_index as u16 as i32 + 1i32 & 0xfffi32;
                     if !(back_ref_i < back_ref_len + 2i32) {
@@ -163,7 +161,7 @@ pub unsafe fn lz_unpack(Input: *const u8, mut Output: *mut u8, UnpackedSize: usi
                 }
             }
         }
-        if count == UnpackedSize {
+        if count == unpacked_size {
             return;
         }
     }
