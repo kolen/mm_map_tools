@@ -6,7 +6,7 @@
 
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
-pub struct LZInput {
+struct LZInput {
     pub ptr: *const u8,
     pub bit_ptr: u8,
     pub value: u32,
