@@ -21,149 +21,149 @@ pub unsafe fn lz_unpack(Input: *const u8, mut Output: *mut u8, UnpackedSize: usi
         BitPtr: 0,
         Value: 0,
     };
-    let mut LZ: *mut lz_input = 0 as *mut lz_input;
-    let mut Count: usize = 0;
-    let mut Bit: u8 = 0;
-    let mut PtrInc: *const u8 = 0 as *const u8;
-    let mut ValueBit: i32 = 0;
-    let mut NextBit: i8 = 0;
-    let mut Value: i8 = 0;
-    let mut NextBit2: i8 = 0;
-    let mut BackRefBit: u32 = 0;
-    let mut BackRefOff: i32 = 0;
-    let mut BackRefI: i32 = 0;
-    let mut BackRefLen: i32 = 0;
-    let mut NextBit3: i8 = 0;
-    let mut LowBit: u32 = 0;
-    let mut HighBit: u32 = 0;
-    let mut NextBit4: i8 = 0;
-    let mut Value2: i32 = 0;
-    let mut DictIndex: i32 = 0;
-    let mut CountSave: usize = 0;
+    let mut lz: *mut lz_input = 0 as *mut lz_input;
+    let mut count: usize = 0;
+    let mut bit: u8 = 0;
+    let mut ptr_inc: *const u8 = 0 as *const u8;
+    let mut value_bit: i32 = 0;
+    let mut next_bit: i8 = 0;
+    let mut value: i8 = 0;
+    let mut next_bit_2: i8 = 0;
+    let mut back_ref_bit: u32 = 0;
+    let mut back_ref_off: i32 = 0;
+    let mut back_ref_i: i32 = 0;
+    let mut back_ref_len: i32 = 0;
+    let mut next_bit_3: i8 = 0;
+    let mut low_bit: u32 = 0;
+    let mut high_bit: u32 = 0;
+    let mut next_bit_4: i8 = 0;
+    let mut value_2: i32 = 0;
+    let mut dict_index: i32 = 0;
+    let mut count_save: usize = 0;
 
-    LZ = &mut LZInput;
-    (*LZ).Ptr = Input;
-    (*LZ).BitPtr = 0x80i32 as u8;
-    (*LZ).Value = 0i32 as u32;
-    Count = 0;
-    CountSave = 0;
-    DictIndex = 1i32;
+    lz = &mut LZInput;
+    (*lz).Ptr = Input;
+    (*lz).BitPtr = 0x80i32 as u8;
+    (*lz).Value = 0i32 as u32;
+    count = 0;
+    count_save = 0;
+    dict_index = 1i32;
     loop {
-        Bit = (*LZ).BitPtr;
-        if Bit as i32 == 0x80i32 {
-            PtrInc = (*LZ).Ptr.offset(1isize);
-            (*LZ).Value = *(*LZ).Ptr as u32;
-            (*LZ).Ptr = PtrInc
+        bit = (*lz).BitPtr;
+        if bit as i32 == 0x80i32 {
+            ptr_inc = (*lz).Ptr.offset(1isize);
+            (*lz).Value = *(*lz).Ptr as u32;
+            (*lz).Ptr = ptr_inc
         }
-        ValueBit = ((*LZ).Value & Bit as u32) as i32;
-        NextBit = (Bit as i32 >> 1i32) as i8;
-        (*LZ).BitPtr = NextBit as u8;
-        if 0 == NextBit {
-            (*LZ).BitPtr = 0x80i32 as u8
+        value_bit = ((*lz).Value & bit as u32) as i32;
+        next_bit = (bit as i32 >> 1i32) as i8;
+        (*lz).BitPtr = next_bit as u8;
+        if 0 == next_bit {
+            (*lz).BitPtr = 0x80i32 as u8
         }
-        if 0 != ValueBit {
-            HighBit = 0x80i32 as u32;
-            Value = 0i32 as i8;
+        if 0 != value_bit {
+            high_bit = 0x80i32 as u32;
+            value = 0i32 as i8;
             loop {
-                Bit = (*LZ).BitPtr;
-                if Bit as i32 == 0x80i32 {
-                    PtrInc = (*LZ).Ptr.offset(1isize);
-                    (*LZ).Value = *(*LZ).Ptr as u32;
-                    (*LZ).Ptr = PtrInc
+                bit = (*lz).BitPtr;
+                if bit as i32 == 0x80i32 {
+                    ptr_inc = (*lz).Ptr.offset(1isize);
+                    (*lz).Value = *(*lz).Ptr as u32;
+                    (*lz).Ptr = ptr_inc
                 }
-                if 0 != Bit as u32 & (*LZ).Value {
-                    Value = (Value as u32 | HighBit) as i8
+                if 0 != bit as u32 & (*lz).Value {
+                    value = (value as u32 | high_bit) as i8
                 }
-                HighBit >>= 1i32;
-                NextBit2 = (Bit as i32 >> 1i32) as i8;
-                (*LZ).BitPtr = NextBit2 as u8;
-                if 0 == NextBit2 {
-                    (*LZ).BitPtr = 0x80i32 as u8
+                high_bit >>= 1i32;
+                next_bit_2 = (bit as i32 >> 1i32) as i8;
+                (*lz).BitPtr = next_bit_2 as u8;
+                if 0 == next_bit_2 {
+                    (*lz).BitPtr = 0x80i32 as u8
                 }
-                if !(0 != HighBit) {
+                if !(0 != high_bit) {
                     break;
                 }
             }
             let fresh0 = Output;
             Output = Output.offset(1);
-            *fresh0 = Value as u8;
-            Count += 1;
-            LZDict[DictIndex as usize] = Value as u8;
-            CountSave = Count;
-            DictIndex = DictIndex as u16 as i32 + 1i32 & 0xfffi32
+            *fresh0 = value as u8;
+            count += 1;
+            LZDict[dict_index as usize] = value as u8;
+            count_save = count;
+            dict_index = dict_index as u16 as i32 + 1i32 & 0xfffi32
         } else {
-            BackRefBit = 0x800i32 as u32;
-            BackRefOff = 0i32;
+            back_ref_bit = 0x800i32 as u32;
+            back_ref_off = 0i32;
             loop {
-                Bit = (*LZ).BitPtr;
-                if Bit as i32 == 0x80i32 {
-                    PtrInc = (*LZ).Ptr.offset(1isize);
-                    (*LZ).Value = *(*LZ).Ptr as u32;
-                    (*LZ).Ptr = PtrInc
+                bit = (*lz).BitPtr;
+                if bit as i32 == 0x80i32 {
+                    ptr_inc = (*lz).Ptr.offset(1isize);
+                    (*lz).Value = *(*lz).Ptr as u32;
+                    (*lz).Ptr = ptr_inc
                 }
-                if 0 != Bit as u32 & (*LZ).Value {
-                    BackRefOff = (BackRefOff as u32 | BackRefBit) as i32
+                if 0 != bit as u32 & (*lz).Value {
+                    back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
                 }
-                BackRefBit >>= 1i32;
-                NextBit3 = (Bit as i32 >> 1i32) as i8;
-                (*LZ).BitPtr = NextBit3 as u8;
-                if 0 == NextBit3 {
-                    (*LZ).BitPtr = 0x80i32 as u8
+                back_ref_bit >>= 1i32;
+                next_bit_3 = (bit as i32 >> 1i32) as i8;
+                (*lz).BitPtr = next_bit_3 as u8;
+                if 0 == next_bit_3 {
+                    (*lz).BitPtr = 0x80i32 as u8
                 }
-                if !(0 != BackRefBit) {
+                if !(0 != back_ref_bit) {
                     break;
                 }
             }
-            if 0 == BackRefOff {
+            if 0 == back_ref_off {
                 return;
             }
-            LowBit = 8i32 as u32;
-            BackRefLen = 0i32;
+            low_bit = 8i32 as u32;
+            back_ref_len = 0i32;
             loop {
-                Bit = (*LZ).BitPtr;
-                if Bit as i32 == 0x80i32 {
-                    PtrInc = (*LZ).Ptr.offset(1isize);
-                    (*LZ).Value = *(*LZ).Ptr as u32;
-                    Count = CountSave;
-                    (*LZ).Ptr = PtrInc
+                bit = (*lz).BitPtr;
+                if bit as i32 == 0x80i32 {
+                    ptr_inc = (*lz).Ptr.offset(1isize);
+                    (*lz).Value = *(*lz).Ptr as u32;
+                    count = count_save;
+                    (*lz).Ptr = ptr_inc
                 }
-                if 0 != Bit as u32 & (*LZ).Value {
-                    BackRefLen = (BackRefLen as u32 | LowBit) as i32
+                if 0 != bit as u32 & (*lz).Value {
+                    back_ref_len = (back_ref_len as u32 | low_bit) as i32
                 }
-                LowBit >>= 1i32;
-                NextBit4 = (Bit as i32 >> 1i32) as i8;
-                (*LZ).BitPtr = NextBit4 as u8;
-                if 0 == NextBit4 {
-                    (*LZ).BitPtr = 0x80i32 as u8
+                low_bit >>= 1i32;
+                next_bit_4 = (bit as i32 >> 1i32) as i8;
+                (*lz).BitPtr = next_bit_4 as u8;
+                if 0 == next_bit_4 {
+                    (*lz).BitPtr = 0x80i32 as u8
                 }
-                if !(0 != LowBit) {
+                if !(0 != low_bit) {
                     break;
                 }
             }
-            BackRefI = 0i32;
-            if BackRefLen + 1i32 >= 0i32 {
+            back_ref_i = 0i32;
+            if back_ref_len + 1i32 >= 0i32 {
                 loop {
-                    Value2 = LZDict
-                        [(BackRefOff as u16 as i32 + BackRefI as u16 as i32 & 0xfffi32) as usize]
+                    value_2 = LZDict
+                        [(back_ref_off as u16 as i32 + back_ref_i as u16 as i32 & 0xfffi32) as usize]
                         as i32;
                     let fresh1 = Output;
                     Output = Output.offset(1);
-                    *fresh1 = Value2 as u8;
-                    Count += 1;
-                    CountSave = Count;
-                    if Count == UnpackedSize {
+                    *fresh1 = value_2 as u8;
+                    count += 1;
+                    count_save = count;
+                    if count == UnpackedSize {
                         return;
                     }
-                    LZDict[DictIndex as usize] = Value2 as u8;
-                    BackRefI += 1;
-                    DictIndex = DictIndex as u16 as i32 + 1i32 & 0xfffi32;
-                    if !(BackRefI < BackRefLen + 2i32) {
+                    LZDict[dict_index as usize] = value_2 as u8;
+                    back_ref_i += 1;
+                    dict_index = dict_index as u16 as i32 + 1i32 & 0xfffi32;
+                    if !(back_ref_i < back_ref_len + 2i32) {
                         break;
                     }
                 }
             }
         }
-        if Count == UnpackedSize {
+        if count == UnpackedSize {
             return;
         }
     }
