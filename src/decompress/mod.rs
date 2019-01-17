@@ -132,10 +132,7 @@ fn deobfuscate(input: &mut [u8]) -> Result<(), DecompressError> {
 
 fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
-    let buffer = lz_unpack(
-        input[HEADER_SIZE..].as_ptr(),
-        header.unpacked_size as usize,
-    );
+    let buffer = lz_unpack(&input[HEADER_SIZE..], header.unpacked_size as usize);
 
     if header.checksum_uncompressed == checksum(&buffer) {
         Ok(buffer)

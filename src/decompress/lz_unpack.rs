@@ -7,23 +7,22 @@
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
 struct LZInput {
-    pub ptr: *const u8,
     pub bit_ptr: u8,
     pub value: u32,
 }
 
-pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
+pub fn lz_unpack(input: &[u8], unpacked_size: usize) -> Vec<u8> {
     let mut output: Vec<u8> = Vec::with_capacity(unpacked_size);
+
+    let mut input_iter = input.iter();
 
     let mut lz_dict: [u8; 4096] = [0; 4096];
     let mut lz_input: LZInput = LZInput {
-        ptr: 0 as *const u8,
         bit_ptr: 0,
         value: 0,
     };
 
     let lz = &mut lz_input;
-    (*lz).ptr = input;
     (*lz).bit_ptr = 0x80 as u8;
     (*lz).value = 0 as u32;
     let mut count = 0;
@@ -31,14 +30,9 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
     let mut dict_index: i32 = 1;
     loop {
         let mut value: i8;
-        let mut ptr_inc: *const u8;
         let mut bit: u8 = (*lz).bit_ptr;
         if bit as i32 == 0x80 {
-            unsafe {
-                ptr_inc = (*lz).ptr.offset(1);
-                (*lz).value = *(*lz).ptr as u32;
-                (*lz).ptr = ptr_inc
-            }
+            (*lz).value = *input_iter.next().unwrap() as u32;
         }
         let value_bit: i32 = ((*lz).value & bit as u32) as i32;
         let next_bit: i8 = (bit as i32 >> 1) as i8;
@@ -52,11 +46,7 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80 {
-                    unsafe {
-                        ptr_inc = (*lz).ptr.offset(1);
-                        (*lz).value = *(*lz).ptr as u32;
-                        (*lz).ptr = ptr_inc
-                    }
+                    (*lz).value = *input_iter.next().unwrap() as u32;
                 }
                 if 0 != bit as u32 & (*lz).value {
                     value = (value as u32 | high_bit) as i8
@@ -82,11 +72,7 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80 {
-                    unsafe {
-                        ptr_inc = (*lz).ptr.offset(1);
-                        (*lz).value = *(*lz).ptr as u32;
-                        (*lz).ptr = ptr_inc
-                    }
+                    (*lz).value = *input_iter.next().unwrap() as u32;
                 }
                 if 0 != bit as u32 & (*lz).value {
                     back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
@@ -109,12 +95,8 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80 {
-                    unsafe {
-                        ptr_inc = (*lz).ptr.offset(1);
-                        (*lz).value = *(*lz).ptr as u32;
-                    }
+                    (*lz).value = *input_iter.next().unwrap() as u32;
                     count = count_save;
-                    (*lz).ptr = ptr_inc
                 }
                 if 0 != bit as u32 & (*lz).value {
                     back_ref_len = (back_ref_len as u32 | low_bit) as i32
