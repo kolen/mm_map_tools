@@ -26,7 +26,7 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
     let mut back_ref_i: i32 = 0;
     let mut back_ref_len: i32 = 0;
 
-    let mut lz = &mut lz_input;
+    let lz = &mut lz_input;
     (*lz).ptr = input;
     (*lz).bit_ptr = 0x80i32 as u8;
     (*lz).value = 0i32 as u32;
