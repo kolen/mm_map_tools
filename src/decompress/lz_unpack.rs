@@ -21,10 +21,6 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
     };
     let mut ptr_inc: *const u8 = 0 as *const u8;
     let mut value: i8 = 0;
-    let mut back_ref_bit: u32 = 0;
-    let mut back_ref_off: i32 = 0;
-    let mut back_ref_i: i32 = 0;
-    let mut back_ref_len: i32 = 0;
 
     let lz = &mut lz_input;
     (*lz).ptr = input;
@@ -77,8 +73,8 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
             count_save = count;
             dict_index = dict_index as u16 as i32 + 1i32 & 0xfffi32
         } else {
-            back_ref_bit = 0x800i32 as u32;
-            back_ref_off = 0i32;
+            let mut back_ref_bit: u32 = 0x800i32 as u32;
+            let mut back_ref_off: i32 = 0;
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
@@ -102,8 +98,8 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
             if 0 == back_ref_off {
                 return;
             }
-            let mut low_bit: u32 = 8 as u32;
-            back_ref_len = 0i32;
+            let mut low_bit: u32 = 8;
+            let mut back_ref_len: i32 = 0;
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
@@ -125,7 +121,7 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
                     break;
                 }
             }
-            back_ref_i = 0i32;
+            let mut back_ref_i: i32 = 0i32;
             if back_ref_len + 1i32 >= 0i32 {
                 loop {
                     let value_2 = lz_dict
