@@ -4,58 +4,46 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-struct LZInput {
-    pub bit_ptr: u8,
-    pub value: u32,
-}
-
 pub fn lz_unpack(input: &[u8], unpacked_size: usize) -> Vec<u8> {
     let mut output: Vec<u8> = Vec::with_capacity(unpacked_size);
 
     let mut input_iter = input.iter();
 
     let mut lz_dict: [u8; 4096] = [0; 4096];
-    let mut lz_input: LZInput = LZInput {
-        bit_ptr: 0,
-        value: 0,
-    };
+    let mut bit_ptr: u8 = 0x80;
+    let mut lz_value: u32 = 0;
 
-    let lz = &mut lz_input;
-    (*lz).bit_ptr = 0x80 as u8;
-    (*lz).value = 0 as u32;
     let mut count = 0;
     let mut count_save = 0;
     let mut dict_index: i32 = 1;
     loop {
         let mut value: i8;
-        let mut bit: u8 = (*lz).bit_ptr;
+        let mut bit: u8 = bit_ptr;
         if bit as i32 == 0x80 {
-            (*lz).value = *input_iter.next().unwrap() as u32;
+            lz_value = *input_iter.next().unwrap() as u32;
         }
-        let value_bit: i32 = ((*lz).value & bit as u32) as i32;
+        let value_bit: i32 = (lz_value & bit as u32) as i32;
         let next_bit: i8 = (bit as i32 >> 1) as i8;
-        (*lz).bit_ptr = next_bit as u8;
+        bit_ptr = next_bit as u8;
         if 0 == next_bit {
-            (*lz).bit_ptr = 0x80 as u8
+            bit_ptr = 0x80 as u8
         }
         if 0 != value_bit {
             let mut high_bit: u32 = 0x80 as u32;
             value = 0 as i8;
             loop {
-                bit = (*lz).bit_ptr;
+                bit = bit_ptr;
                 if bit as i32 == 0x80 {
-                    (*lz).value = *input_iter.next().unwrap() as u32;
+                    lz_value = *input_iter.next().unwrap() as u32;
                 }
-                if 0 != bit as u32 & (*lz).value {
+                if 0 != bit as u32 & lz_value {
                     value = (value as u32 | high_bit) as i8
                 }
                 high_bit >>= 1;
                 let next_bit_2: i8 = (bit as i32 >> 1) as i8;
-                (*lz).bit_ptr = next_bit_2 as u8;
+                bit_ptr = next_bit_2 as u8;
                 if 0 == next_bit_2 {
-                    (*lz).bit_ptr = 0x80 as u8
+                    bit_ptr = 0x80 as u8
                 }
                 if !(0 != high_bit) {
                     break;
@@ -70,18 +58,18 @@ pub fn lz_unpack(input: &[u8], unpacked_size: usize) -> Vec<u8> {
             let mut back_ref_bit: u32 = 0x800;
             let mut back_ref_off: i32 = 0;
             loop {
-                bit = (*lz).bit_ptr;
+                bit = bit_ptr;
                 if bit as i32 == 0x80 {
-                    (*lz).value = *input_iter.next().unwrap() as u32;
+                    lz_value = *input_iter.next().unwrap() as u32;
                 }
-                if 0 != bit as u32 & (*lz).value {
+                if 0 != bit as u32 & lz_value {
                     back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
                 }
                 back_ref_bit >>= 1;
                 let next_bit_3: i8 = (bit as i32 >> 1) as i8;
-                (*lz).bit_ptr = next_bit_3 as u8;
+                bit_ptr = next_bit_3 as u8;
                 if 0 == next_bit_3 {
-                    (*lz).bit_ptr = 0x80 as u8
+                    bit_ptr = 0x80 as u8
                 }
                 if !(0 != back_ref_bit) {
                     break;
@@ -93,19 +81,19 @@ pub fn lz_unpack(input: &[u8], unpacked_size: usize) -> Vec<u8> {
             let mut low_bit: u32 = 8;
             let mut back_ref_len: i32 = 0;
             loop {
-                bit = (*lz).bit_ptr;
+                bit = bit_ptr;
                 if bit as i32 == 0x80 {
-                    (*lz).value = *input_iter.next().unwrap() as u32;
+                    lz_value = *input_iter.next().unwrap() as u32;
                     count = count_save;
                 }
-                if 0 != bit as u32 & (*lz).value {
+                if 0 != bit as u32 & lz_value {
                     back_ref_len = (back_ref_len as u32 | low_bit) as i32
                 }
                 low_bit >>= 1;
                 let next_bit_4: i8 = (bit as i32 >> 1) as i8;
-                (*lz).bit_ptr = next_bit_4 as u8;
+                bit_ptr = next_bit_4 as u8;
                 if 0 == next_bit_4 {
-                    (*lz).bit_ptr = 0x80 as u8
+                    bit_ptr = 0x80 as u8
                 }
                 if !(0 != low_bit) {
                     break;
