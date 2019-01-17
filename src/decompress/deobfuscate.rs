@@ -18,15 +18,16 @@ static mut PRNG_Map: [u32; 256] = [0; 256];
 static mut PRNG_MapReady: i32 = 0;
 
 fn prng(mut table: &mut [u32; 256]) -> u32 {
-    let mut a: u32 = 0;
-    let mut b: u32 = 0;
-    let mut c: u32 = 0;
-    a = table[0];
-    unsafe { table[0] = PRNG_Map[a as usize]; }
-    b = table[1];
-    unsafe { table[1] = PRNG_Map[b as usize]; }
-    c = table[b.wrapping_add(2i32 as u32) as usize]
-        ^ table[a.wrapping_add(2i32 as u32) as usize];
+    let a = table[0];
+    unsafe {
+        table[0] = PRNG_Map[a as usize];
+    }
+    let b = table[1];
+    unsafe {
+        table[1] = PRNG_Map[b as usize];
+    }
+    let c =
+        table[b.wrapping_add(2i32 as u32) as usize] ^ table[a.wrapping_add(2i32 as u32) as usize];
     table[a.wrapping_add(2i32 as u32) as usize] = c;
     return c;
 }
