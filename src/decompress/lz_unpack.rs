@@ -12,7 +12,7 @@ struct LZInput {
     pub value: u32,
 }
 
-pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
+pub fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
     let mut lz_dict: [u8; 4096] = [0; 4096];
     let mut lz_input: LZInput = LZInput {
         ptr: 0 as *const u8,
@@ -32,9 +32,11 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
         let mut ptr_inc: *const u8;
         let mut bit: u8 = (*lz).bit_ptr;
         if bit as i32 == 0x80i32 {
-            ptr_inc = (*lz).ptr.offset(1isize);
-            (*lz).value = *(*lz).ptr as u32;
-            (*lz).ptr = ptr_inc
+            unsafe {
+                ptr_inc = (*lz).ptr.offset(1isize);
+                (*lz).value = *(*lz).ptr as u32;
+                (*lz).ptr = ptr_inc
+            }
         }
         let value_bit: i32 = ((*lz).value & bit as u32) as i32;
         let next_bit: i8 = (bit as i32 >> 1i32) as i8;
@@ -48,9 +50,11 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
-                    ptr_inc = (*lz).ptr.offset(1isize);
-                    (*lz).value = *(*lz).ptr as u32;
-                    (*lz).ptr = ptr_inc
+                    unsafe {
+                        ptr_inc = (*lz).ptr.offset(1isize);
+                        (*lz).value = *(*lz).ptr as u32;
+                        (*lz).ptr = ptr_inc
+                    }
                 }
                 if 0 != bit as u32 & (*lz).value {
                     value = (value as u32 | high_bit) as i8
@@ -66,8 +70,10 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
                 }
             }
             let fresh0 = output;
-            output = output.offset(1);
-            *fresh0 = value as u8;
+            unsafe {
+                output = output.offset(1);
+                *fresh0 = value as u8;
+            }
             count += 1;
             lz_dict[dict_index as usize] = value as u8;
             count_save = count;
@@ -78,9 +84,11 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
-                    ptr_inc = (*lz).ptr.offset(1isize);
-                    (*lz).value = *(*lz).ptr as u32;
-                    (*lz).ptr = ptr_inc
+                    unsafe {
+                        ptr_inc = (*lz).ptr.offset(1isize);
+                        (*lz).value = *(*lz).ptr as u32;
+                        (*lz).ptr = ptr_inc
+                    }
                 }
                 if 0 != bit as u32 & (*lz).value {
                     back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
@@ -103,8 +111,10 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
             loop {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
-                    ptr_inc = (*lz).ptr.offset(1isize);
-                    (*lz).value = *(*lz).ptr as u32;
+                    unsafe {
+                        ptr_inc = (*lz).ptr.offset(1isize);
+                        (*lz).value = *(*lz).ptr as u32;
+                    }
                     count = count_save;
                     (*lz).ptr = ptr_inc
                 }
@@ -128,8 +138,10 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
                         [(back_ref_off as u16 as i32 + back_ref_i as u16 as i32 & 0xfffi32) as usize]
                         as i32;
                     let fresh1 = output;
-                    output = output.offset(1);
-                    *fresh1 = value_2 as u8;
+                    unsafe {
+                        output = output.offset(1);
+                        *fresh1 = value_2 as u8;
+                    }
                     count += 1;
                     count_save = count;
                     if count == unpacked_size {

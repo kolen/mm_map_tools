@@ -134,13 +134,11 @@ fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
     // TODO: Why * 2? Seen this in mmdecrypt.c
     let mut buffer = vec![0; (header.unpacked_size * 2) as usize];
-    unsafe {
-        lz_unpack(
-            input[HEADER_SIZE..].as_ptr(),
-            buffer.as_mut_ptr(),
-            header.unpacked_size as usize,
-        );
-    }
+    lz_unpack(
+        input[HEADER_SIZE..].as_ptr(),
+        buffer.as_mut_ptr(),
+        header.unpacked_size as usize,
+    );
 
     buffer.resize(header.unpacked_size as usize, 0);
     if header.checksum_uncompressed == checksum(&buffer) {
