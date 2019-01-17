@@ -108,9 +108,7 @@ fn checksum(data: &[u8]) -> u32 {
 }
 
 fn deobfuscate(input: &mut [u8]) -> Result<(), DecompressError> {
-    unsafe {
-        decrypt(input.as_mut_ptr(), input.len() as i32);
-    }
+    decrypt(input);
     let header = Header::from_bytes(input)?;
     if header.checksum_deobfuscated == checksum(&input[HEADER_SIZE..]) {
         Ok(())
