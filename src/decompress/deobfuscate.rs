@@ -17,17 +17,17 @@ static mut PRNG_State: u32 = 0;
 static mut PRNG_Map: [u32; 256] = [0; 256];
 static mut PRNG_MapReady: i32 = 0;
 
-unsafe fn prng(mut table: *mut u32) -> u32 {
+fn prng(mut table: &mut [u32; 256]) -> u32 {
     let mut a: u32 = 0;
     let mut b: u32 = 0;
     let mut c: u32 = 0;
-    a = *table.offset(0isize);
-    *table.offset(0isize) = PRNG_Map[a as usize];
-    b = *table.offset(1isize);
-    *table.offset(1isize) = PRNG_Map[b as usize];
-    c = *table.offset(b.wrapping_add(2i32 as u32) as isize)
-        ^ *table.offset(a.wrapping_add(2i32 as u32) as isize);
-    *table.offset(a.wrapping_add(2i32 as u32) as isize) = c;
+    a = table[0];
+    unsafe { table[0] = PRNG_Map[a as usize]; }
+    b = table[1];
+    unsafe { table[1] = PRNG_Map[b as usize]; }
+    c = table[b.wrapping_add(2i32 as u32) as usize]
+        ^ table[a.wrapping_add(2i32 as u32) as usize];
+    table[a.wrapping_add(2i32 as u32) as usize] = c;
     return c;
 }
 
@@ -98,9 +98,7 @@ pub fn decrypt(Input: &mut [u8]) {
     let mut Len: usize = 0;
     let mut Table: [u32; 256] = [0; 256];
     let mut P: *mut u32 = Input.as_mut_ptr() as *mut u32;
-    unsafe {
-        prng_init(&mut Table, 1234567890u32);
-    }
+    prng_init(&mut Table, 1234567890u32);
     Table[254usize] = 0i32 as u32;
     let fresh0 = P;
     unsafe {
@@ -115,7 +113,7 @@ pub fn decrypt(Input: &mut [u8]) {
         let fresh1 = P;
         unsafe {
             P = P.offset(1);
-            *fresh1 ^= prng(Table.as_mut_ptr());
+            *fresh1 ^= prng(&mut Table);
         }
         I += 1
     }
@@ -124,7 +122,7 @@ pub fn decrypt(Input: &mut [u8]) {
     while I < Len {
         unsafe {
             let ref mut fresh2 = *(P as *mut u8);
-            *fresh2 = (*fresh2 as u32 ^ prng(Table.as_mut_ptr())) as u8;
+            *fresh2 = (*fresh2 as u32 ^ prng(&mut Table)) as u8;
         }
         I += 1
     }
