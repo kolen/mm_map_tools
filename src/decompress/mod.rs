@@ -1,5 +1,6 @@
 mod lz_unpack;
 
+use self::lz_unpack::lz_unpack;
 use byteorder::{ByteOrder, LittleEndian};
 use std::error;
 use std::fmt;
@@ -7,7 +8,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::sync::{Mutex, Once};
-use self::lz_unpack::lz_unpack;
 
 extern "C" {
     fn init_prng_map();
