@@ -1,5 +1,6 @@
+mod deobfuscate;
 mod lz_unpack;
-
+use self::deobfuscate::decrypt;
 use self::lz_unpack::lz_unpack;
 use byteorder::{ByteOrder, LittleEndian};
 use std::error;
@@ -8,11 +9,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::sync::{Mutex, Once};
-
-extern "C" {
-    fn init_prng_map();
-    fn decrypt(input: *mut u8, size: usize);
-}
 
 #[derive(Debug)]
 enum CompressionType {
@@ -90,12 +86,6 @@ lazy_static! {
     static ref EXTERNAL_LIB_LOCK: Mutex<()> = Mutex::new(());
 }
 
-fn init_prng_once() {
-    PRNG_INITIALIZED.call_once(|| unsafe {
-        init_prng_map();
-    });
-}
-
 fn checksum(data: &[u8]) -> u32 {
     let mut sum: u32 = 0;
     let mut odd: bool = false;
@@ -118,9 +108,8 @@ fn checksum(data: &[u8]) -> u32 {
 }
 
 fn deobfuscate(input: &mut [u8]) -> Result<(), DecompressError> {
-    init_prng_once();
     unsafe {
-        decrypt(input.as_mut_ptr(), input.len());
+        decrypt(input.as_mut_ptr(), input.len() as i32);
     }
     let header = Header::from_bytes(input)?;
     if header.checksum_deobfuscated == checksum(&input[HEADER_SIZE..]) {

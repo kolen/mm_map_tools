@@ -18,6 +18,3 @@ glib = "*"
 [dependencies.gtk]
 version = "0.5.0"
 features = ["v3_10"]
-
-[build-dependencies]
-cc = "1.0"
