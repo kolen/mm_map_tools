@@ -7,17 +7,17 @@
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
 pub struct LZInput {
-    pub Ptr: *const u8,
-    pub BitPtr: u8,
-    pub Value: u32,
+    pub ptr: *const u8,
+    pub bit_ptr: u8,
+    pub value: u32,
 }
 
 pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
     let mut lz_dict: [u8; 4096] = [0; 4096];
     let mut lz_input: LZInput = LZInput {
-        Ptr: 0 as *const u8,
-        BitPtr: 0,
-        Value: 0,
+        ptr: 0 as *const u8,
+        bit_ptr: 0,
+        value: 0,
     };
     let mut lz: *mut LZInput = 0 as *mut LZInput;
     let mut count: usize = 0;
@@ -40,43 +40,43 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
     let mut count_save: usize = 0;
 
     lz = &mut lz_input;
-    (*lz).Ptr = input;
-    (*lz).BitPtr = 0x80i32 as u8;
-    (*lz).Value = 0i32 as u32;
+    (*lz).ptr = input;
+    (*lz).bit_ptr = 0x80i32 as u8;
+    (*lz).value = 0i32 as u32;
     count = 0;
     count_save = 0;
     dict_index = 1i32;
     loop {
-        bit = (*lz).BitPtr;
+        bit = (*lz).bit_ptr;
         if bit as i32 == 0x80i32 {
-            ptr_inc = (*lz).Ptr.offset(1isize);
-            (*lz).Value = *(*lz).Ptr as u32;
-            (*lz).Ptr = ptr_inc
+            ptr_inc = (*lz).ptr.offset(1isize);
+            (*lz).value = *(*lz).ptr as u32;
+            (*lz).ptr = ptr_inc
         }
-        value_bit = ((*lz).Value & bit as u32) as i32;
+        value_bit = ((*lz).value & bit as u32) as i32;
         next_bit = (bit as i32 >> 1i32) as i8;
-        (*lz).BitPtr = next_bit as u8;
+        (*lz).bit_ptr = next_bit as u8;
         if 0 == next_bit {
-            (*lz).BitPtr = 0x80i32 as u8
+            (*lz).bit_ptr = 0x80i32 as u8
         }
         if 0 != value_bit {
             high_bit = 0x80i32 as u32;
             value = 0i32 as i8;
             loop {
-                bit = (*lz).BitPtr;
+                bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
-                    ptr_inc = (*lz).Ptr.offset(1isize);
-                    (*lz).Value = *(*lz).Ptr as u32;
-                    (*lz).Ptr = ptr_inc
+                    ptr_inc = (*lz).ptr.offset(1isize);
+                    (*lz).value = *(*lz).ptr as u32;
+                    (*lz).ptr = ptr_inc
                 }
-                if 0 != bit as u32 & (*lz).Value {
+                if 0 != bit as u32 & (*lz).value {
                     value = (value as u32 | high_bit) as i8
                 }
                 high_bit >>= 1i32;
                 next_bit_2 = (bit as i32 >> 1i32) as i8;
-                (*lz).BitPtr = next_bit_2 as u8;
+                (*lz).bit_ptr = next_bit_2 as u8;
                 if 0 == next_bit_2 {
-                    (*lz).BitPtr = 0x80i32 as u8
+                    (*lz).bit_ptr = 0x80i32 as u8
                 }
                 if !(0 != high_bit) {
                     break;
@@ -93,20 +93,20 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
             back_ref_bit = 0x800i32 as u32;
             back_ref_off = 0i32;
             loop {
-                bit = (*lz).BitPtr;
+                bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
-                    ptr_inc = (*lz).Ptr.offset(1isize);
-                    (*lz).Value = *(*lz).Ptr as u32;
-                    (*lz).Ptr = ptr_inc
+                    ptr_inc = (*lz).ptr.offset(1isize);
+                    (*lz).value = *(*lz).ptr as u32;
+                    (*lz).ptr = ptr_inc
                 }
-                if 0 != bit as u32 & (*lz).Value {
+                if 0 != bit as u32 & (*lz).value {
                     back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
                 }
                 back_ref_bit >>= 1i32;
                 next_bit_3 = (bit as i32 >> 1i32) as i8;
-                (*lz).BitPtr = next_bit_3 as u8;
+                (*lz).bit_ptr = next_bit_3 as u8;
                 if 0 == next_bit_3 {
-                    (*lz).BitPtr = 0x80i32 as u8
+                    (*lz).bit_ptr = 0x80i32 as u8
                 }
                 if !(0 != back_ref_bit) {
                     break;
@@ -118,21 +118,21 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
             low_bit = 8i32 as u32;
             back_ref_len = 0i32;
             loop {
-                bit = (*lz).BitPtr;
+                bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80i32 {
-                    ptr_inc = (*lz).Ptr.offset(1isize);
-                    (*lz).Value = *(*lz).Ptr as u32;
+                    ptr_inc = (*lz).ptr.offset(1isize);
+                    (*lz).value = *(*lz).ptr as u32;
                     count = count_save;
-                    (*lz).Ptr = ptr_inc
+                    (*lz).ptr = ptr_inc
                 }
-                if 0 != bit as u32 & (*lz).Value {
+                if 0 != bit as u32 & (*lz).value {
                     back_ref_len = (back_ref_len as u32 | low_bit) as i32
                 }
                 low_bit >>= 1i32;
                 next_bit_4 = (bit as i32 >> 1i32) as i8;
-                (*lz).BitPtr = next_bit_4 as u8;
+                (*lz).bit_ptr = next_bit_4 as u8;
                 if 0 == next_bit_4 {
-                    (*lz).BitPtr = 0x80i32 as u8
+                    (*lz).bit_ptr = 0x80i32 as u8
                 }
                 if !(0 != low_bit) {
                     break;
