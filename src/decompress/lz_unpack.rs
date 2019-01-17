@@ -12,7 +12,9 @@ struct LZInput {
     pub value: u32,
 }
 
-pub fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
+pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
+    let mut output: Vec<u8> = Vec::with_capacity(unpacked_size);
+
     let mut lz_dict: [u8; 4096] = [0; 4096];
     let mut lz_input: LZInput = LZInput {
         ptr: 0 as *const u8,
@@ -69,11 +71,7 @@ pub fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
                     break;
                 }
             }
-            let fresh0 = output;
-            unsafe {
-                output = output.offset(1);
-                *fresh0 = value as u8;
-            }
+            output.push(value as u8);
             count += 1;
             lz_dict[dict_index as usize] = value as u8;
             count_save = count;
@@ -104,7 +102,7 @@ pub fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
                 }
             }
             if 0 == back_ref_off {
-                return;
+                return output;
             }
             let mut low_bit: u32 = 8;
             let mut back_ref_len: i32 = 0;
@@ -137,15 +135,11 @@ pub fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
                     let value_2 = lz_dict
                         [(back_ref_off as u16 as i32 + back_ref_i as u16 as i32 & 0xfffi32) as usize]
                         as i32;
-                    let fresh1 = output;
-                    unsafe {
-                        output = output.offset(1);
-                        *fresh1 = value_2 as u8;
-                    }
+                    output.push(value_2 as u8);
                     count += 1;
                     count_save = count;
                     if count == unpacked_size {
-                        return;
+                        return output;
                     }
                     lz_dict[dict_index as usize] = value_2 as u8;
                     back_ref_i += 1;
@@ -157,7 +151,7 @@ pub fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: usize) {
             }
         }
         if count == unpacked_size {
-            return;
+            return output;
         }
     }
 }
