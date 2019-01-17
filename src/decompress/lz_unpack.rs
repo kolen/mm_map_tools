@@ -16,14 +16,13 @@ pub struct lz_input {
     pub BitPtr: u8,
     pub Value: u32,
 }
-#[no_mangle]
-pub static mut LZDict: [u8; 4096] = [0; 4096];
 
 pub unsafe fn lz_unpack(
     Input: *const u8,
     mut Output: *mut u8,
     UnpackedSize: usize,
 ) {
+    let mut LZDict: [u8; 4096] = [0; 4096];
     let mut LZInput: lz_input = lz_input {
         Ptr: 0 as *const u8,
         BitPtr: 0,
@@ -48,8 +47,6 @@ pub unsafe fn lz_unpack(
     let mut Value2: i32 = 0;
     let mut DictIndex: i32 = 0;
     let mut CountSave: usize = 0;
-
-    LZDict.iter_mut().map( |e| *e = 0 );
 
     LZ = &mut LZInput;
     (*LZ).Ptr = Input;
