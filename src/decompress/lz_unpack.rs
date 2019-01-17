@@ -35,7 +35,7 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
         let mut bit: u8 = (*lz).bit_ptr;
         if bit as i32 == 0x80 {
             unsafe {
-                ptr_inc = (*lz).ptr.offset(1isize);
+                ptr_inc = (*lz).ptr.offset(1);
                 (*lz).value = *(*lz).ptr as u32;
                 (*lz).ptr = ptr_inc
             }
@@ -53,7 +53,7 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80 {
                     unsafe {
-                        ptr_inc = (*lz).ptr.offset(1isize);
+                        ptr_inc = (*lz).ptr.offset(1);
                         (*lz).value = *(*lz).ptr as u32;
                         (*lz).ptr = ptr_inc
                     }
@@ -83,7 +83,7 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80 {
                     unsafe {
-                        ptr_inc = (*lz).ptr.offset(1isize);
+                        ptr_inc = (*lz).ptr.offset(1);
                         (*lz).value = *(*lz).ptr as u32;
                         (*lz).ptr = ptr_inc
                     }
@@ -110,7 +110,7 @@ pub fn lz_unpack(input: *const u8, unpacked_size: usize) -> Vec<u8> {
                 bit = (*lz).bit_ptr;
                 if bit as i32 == 0x80 {
                     unsafe {
-                        ptr_inc = (*lz).ptr.offset(1isize);
+                        ptr_inc = (*lz).ptr.offset(1);
                         (*lz).value = *(*lz).ptr as u32;
                     }
                     count = count_save;
