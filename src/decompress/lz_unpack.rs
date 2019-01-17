@@ -102,16 +102,14 @@ pub fn lz_unpack(input: &[u8], unpacked_size: usize) -> Vec<u8> {
             let mut back_ref_i: i32 = 0;
             if back_ref_len + 1 >= 0 {
                 loop {
-                    let value_2 = lz_dict
-                        [(back_ref_off as u16 as i32 + back_ref_i as u16 as i32 & 0xfffi32) as usize]
-                        as i32;
-                    output.push(value_2 as u8);
+                    let value_2 = lz_dict[(back_ref_off + back_ref_i & 0xfff) as usize];
+                    output.push(value_2);
                     count += 1;
                     count_save = count;
                     if count == unpacked_size {
                         return output;
                     }
-                    lz_dict[dict_index as usize] = value_2 as u8;
+                    lz_dict[dict_index as usize] = value_2;
                     back_ref_i += 1;
                     dict_index = dict_index as u16 as i32 + 1 & 0xfffi32;
                     if !(back_ref_i < back_ref_len + 2) {
