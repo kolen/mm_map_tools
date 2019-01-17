@@ -19,8 +19,6 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
         bit_ptr: 0,
         value: 0,
     };
-    let mut lz: *mut LZInput = 0 as *mut LZInput;
-    let mut count: usize = 0;
     let mut bit: u8 = 0;
     let mut ptr_inc: *const u8 = 0 as *const u8;
     let mut value_bit: i32 = 0;
@@ -37,15 +35,14 @@ pub unsafe fn lz_unpack(input: *const u8, mut output: *mut u8, unpacked_size: us
     let mut next_bit_4: i8 = 0;
     let mut value_2: i32 = 0;
     let mut dict_index: i32 = 0;
-    let mut count_save: usize = 0;
 
-    lz = &mut lz_input;
+    let mut lz = &mut lz_input;
     (*lz).ptr = input;
     (*lz).bit_ptr = 0x80i32 as u8;
     (*lz).value = 0i32 as u32;
-    count = 0;
-    count_save = 0;
-    dict_index = 1i32;
+    let mut count = 0;
+    let mut count_save = 0;
+    let mut dict_index: i32 = 1;
     loop {
         bit = (*lz).bit_ptr;
         if bit as i32 == 0x80i32 {
