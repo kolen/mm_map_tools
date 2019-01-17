@@ -1,3 +1,5 @@
+mod lz_unpack;
+
 use byteorder::{ByteOrder, LittleEndian};
 use std::error;
 use std::fmt;
@@ -5,11 +7,11 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::sync::{Mutex, Once};
+use self::lz_unpack::lz_unpack;
 
 extern "C" {
     fn init_prng_map();
     fn decrypt(input: *mut u8, size: usize);
-    fn lz_unpack(input: *const u8, output: *mut u8, unpacked_size: isize);
 }
 
 #[derive(Debug)]
@@ -136,7 +138,7 @@ fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
         lz_unpack(
             input[HEADER_SIZE..].as_ptr(),
             buffer.as_mut_ptr(),
-            header.unpacked_size as isize,
+            header.unpacked_size as usize,
         );
     }
 
