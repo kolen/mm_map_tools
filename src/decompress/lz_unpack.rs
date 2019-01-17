@@ -4,11 +4,8 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
-#![allow(
-    non_snake_case,
-    non_upper_case_globals,
-    unused_mut
-)]
+#![allow(non_snake_case, non_upper_case_globals, unused_mut)]
+
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
 pub struct lz_input {
@@ -17,11 +14,7 @@ pub struct lz_input {
     pub Value: u32,
 }
 
-pub unsafe fn lz_unpack(
-    Input: *const u8,
-    mut Output: *mut u8,
-    UnpackedSize: usize,
-) {
+pub unsafe fn lz_unpack(Input: *const u8, mut Output: *mut u8, UnpackedSize: usize) {
     let mut LZDict: [u8; 4096] = [0; 4096];
     let mut LZInput: lz_input = lz_input {
         Ptr: 0 as *const u8,
@@ -150,9 +143,9 @@ pub unsafe fn lz_unpack(
             BackRefI = 0i32;
             if BackRefLen + 1i32 >= 0i32 {
                 loop {
-                    Value2 = LZDict[(BackRefOff as u16 as i32
-                        + BackRefI as u16 as i32
-                        & 0xfffi32) as usize] as i32;
+                    Value2 = LZDict
+                        [(BackRefOff as u16 as i32 + BackRefI as u16 as i32 & 0xfffi32) as usize]
+                        as i32;
                     let fresh1 = Output;
                     Output = Output.offset(1);
                     *fresh1 = Value2 as u8;
