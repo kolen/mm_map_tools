@@ -14,18 +14,20 @@
 )]
 
 static mut PRNG_State: u32 = 0;
-static mut PRNG_Map: [u32; 256] = [0; 256];
-static mut PRNG_MapReady: i32 = 0;
+
+fn prng_map_lookup(x: u32) -> u32 {
+    if x >= 0xf9 {
+        0
+    } else {
+        x + 1
+    }
+}
 
 fn prng(mut table: &mut [u32; 256]) -> u32 {
     let a = table[0];
-    unsafe {
-        table[0] = PRNG_Map[a as usize];
-    }
+    table[0] = prng_map_lookup(a);
     let b = table[1];
-    unsafe {
-        table[1] = PRNG_Map[b as usize];
-    }
+    table[1] = prng_map_lookup(b);
     let c =
         table[b.wrapping_add(2i32 as u32) as usize] ^ table[a.wrapping_add(2i32 as u32) as usize];
     table[a.wrapping_add(2i32 as u32) as usize] = c;
@@ -43,14 +45,6 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
     let mut b: i32 = 0;
 
     unsafe {
-        if 0 == PRNG_MapReady {
-            i = 0i32;
-            while i < 0xf9i32 {
-                PRNG_Map[i as usize] = (i + 1i32) as u32;
-                i += 1
-            }
-            PRNG_Map[0xf9i32 as usize] = 0i32 as u32
-        }
         PRNG_State = seed;
     }
 
