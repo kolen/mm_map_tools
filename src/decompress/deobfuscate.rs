@@ -23,40 +23,52 @@ fn prng(table: &mut [u32; 256]) -> u32 {
     return c;
 }
 
+fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
+    let mut t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
+    unsafe {
+        *(&mut t as *mut i64 as *mut u32).offset(1) <<= 16;
+    }
+    t = (t as u64).wrapping_add(0xffff00003039) as i64 as i64;
+    let new_prng_state = t as u32;
+    let table_entry: u32;
+    unsafe {
+        table_entry = *(&mut t as *mut i64 as *mut u32).offset(1) & 0xffff0000 | t as u32 >> 16;
+    }
+
+    assert_eq!(
+        (new_prng_state & 0xffff_0000) >> 16,
+        table_entry & 0xffff,
+        "Returned data words not match: {:x}, {:x}",
+        new_prng_state,
+        table_entry
+    );
+    (new_prng_state, table_entry)
+}
+
 fn prng_init(table: &mut [u32; 256], mut seed: u32) {
-    let mut p: *mut u32;
-    let mut q: *mut i32;
+    let mut p: usize = 251;
+    let mut q: usize = 5;
     let mut prng_state: u32 = seed;
 
     table[0] = 0;
     table[1] = 103;
-    unsafe {
-        p = table.as_mut_ptr().offset(251);
-    }
     let mut i: i32 = 0;
     while i < 250 {
-        let mut t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
-        unsafe {
-            *(&mut t as *mut i64 as *mut u32).offset(1isize) <<= 16i32;
-            t = (t as u64).wrapping_add(0xffff00003039u64) as i64 as i64;
-            prng_state = t as u32;
-            *p = *(&mut t as *mut i64 as *mut u32).offset(1isize) & 0xffff0000u32
-                | t as u32 >> 16i32;
-            p = p.offset(-1);
+        match prng_state_iterate(prng_state) {
+            (new_prng_state, fill_value) => {
+                prng_state = new_prng_state;
+                table[p] = fill_value;
+            }
         }
+        p -= 1;
         i += 1
     }
     let mut a: u32 = 0xffffffff;
     let mut k: u32 = 0x80000000;
-    unsafe {
-        q = table.as_mut_ptr().offset(5) as *mut i32;
-    }
     loop {
-        unsafe {
-            let b = *q;
-            *q = (k | a & b as u32) as i32;
-            q = q.offset(7isize);
-        }
+        let b = table[q];
+        table[q] = (k | a & b) as u32;
+        q += 7;
         k >>= 1i32;
         a >>= 1i32;
         if !(0 != k) {
@@ -99,5 +111,18 @@ pub fn decrypt(Input: &mut [u8]) {
             *fresh2 = (*fresh2 as u32 ^ prng(&mut Table)) as u8;
         }
         I += 1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_prng_state_iterate() {
+        assert_eq!(prng_state_iterate(0x7654_3210), (0xd17a_6109, 0x0a14_d17a));
+        assert_eq!(prng_state_iterate(0x0000_0000), (12345, 0));
+        assert_eq!(prng_state_iterate(0x0000_0001), (0x41c6_7ea6, 0x41c6));
+        assert_eq!(prng_state_iterate(0xffff_ffff), (0xbe39e1cc, 0x4e6cbe39));
     }
 }
