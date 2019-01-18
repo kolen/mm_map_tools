@@ -41,7 +41,7 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
     let mut k: u32 = 0;
     let mut q: *mut i32 = 0 as *mut i32;
     let mut b: i32 = 0;
-    let mut PRNG_State: u32 = seed;
+    let mut prng_state: u32 = seed;
 
     table[0] = 0;
     table[1] = 103;
@@ -52,10 +52,10 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
     i = 0;
     while i < 250 {
         unsafe {
-            t = 0x41c64e6du64.wrapping_mul(PRNG_State as u64) as i64;
+            t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
             *(&mut t as *mut i64 as *mut u32).offset(1isize) <<= 16i32;
             t = (t as u64).wrapping_add(0xffff00003039u64) as i64 as i64;
-            PRNG_State = t as u32;
+            prng_state = t as u32;
             *p = *(&mut t as *mut i64 as *mut u32).offset(1isize) & 0xffff0000u32
                 | t as u32 >> 16i32;
             p = p.offset(-1isize);
