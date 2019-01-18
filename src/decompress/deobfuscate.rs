@@ -13,8 +13,6 @@
     unused_mut
 )]
 
-static mut PRNG_State: u32 = 0;
-
 fn prng_map_lookup(x: u32) -> u32 {
     if x >= 0xf9 {
         0
@@ -43,10 +41,7 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
     let mut k: u32 = 0;
     let mut q: *mut i32 = 0 as *mut i32;
     let mut b: i32 = 0;
-
-    unsafe {
-        PRNG_State = seed;
-    }
+    let mut PRNG_State: u32 = seed;
 
     table[0] = 0;
     table[1] = 103;
