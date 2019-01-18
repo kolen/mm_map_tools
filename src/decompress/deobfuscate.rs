@@ -4,15 +4,6 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
-#![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_mut
-)]
-
 fn prng_map_lookup(x: u32) -> u32 {
     if x >= 0xf9 {
         0
