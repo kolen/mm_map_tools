@@ -12,7 +12,7 @@ fn prng_map_lookup(x: u32) -> u32 {
     }
 }
 
-fn prng(mut table: &mut [u32; 256]) -> u32 {
+fn prng(table: &mut [u32; 256]) -> u32 {
     let a = table[0];
     table[0] = prng_map_lookup(a);
     let b = table[1];
@@ -24,14 +24,8 @@ fn prng(mut table: &mut [u32; 256]) -> u32 {
 }
 
 fn prng_init(table: &mut [u32; 256], mut seed: u32) {
-    let mut p: *mut u32 = 0 as *mut u32;
-    let mut i: i32 = 0;
-    let mut count: i32 = 0;
-    let mut t: i64 = 0;
-    let mut a: u32 = 0;
-    let mut k: u32 = 0;
-    let mut q: *mut i32 = 0 as *mut i32;
-    let mut b: i32 = 0;
+    let mut p: *mut u32;
+    let mut q: *mut i32;
     let mut prng_state: u32 = seed;
 
     table[0] = 0;
@@ -39,11 +33,10 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
     unsafe {
         p = table.as_mut_ptr().offset(251);
     }
-    count = 250;
-    i = 0;
+    let mut i: i32 = 0;
     while i < 250 {
         unsafe {
-            t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
+            let mut t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
             *(&mut t as *mut i64 as *mut u32).offset(1isize) <<= 16i32;
             t = (t as u64).wrapping_add(0xffff00003039u64) as i64 as i64;
             prng_state = t as u32;
@@ -53,14 +46,14 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
         }
         i += 1
     }
-    a = 0xffffffffu32;
-    k = 0x80000000u32;
+    let mut a: u32 = 0xffffffff;
+    let mut k: u32 = 0x80000000;
     unsafe {
         q = table.as_mut_ptr().offset(5) as *mut i32;
     }
     loop {
         unsafe {
-            b = *q;
+            let b = *q;
             *q = (k | a & b as u32) as i32;
             q = q.offset(7isize);
         }
