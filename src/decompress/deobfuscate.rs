@@ -49,35 +49,29 @@ fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
     (new_prng_state, table_entry)
 }
 
-fn prng_init(table: &mut [u32; 256], mut seed: u32) {
-    let mut p: usize = 251;
-    let mut q: usize = 5;
+fn prng_init(table: &mut [u32; 256], seed: u32) {
     let mut prng_state: u32 = seed;
 
     table[0] = 0;
     table[1] = 103;
-    let mut i: i32 = 0;
-    while i < 250 {
+
+    for c in table[2..=251].rchunks_mut(1) {
         match prng_state_iterate(prng_state) {
             (new_prng_state, fill_value) => {
                 prng_state = new_prng_state;
-                table[p] = fill_value;
+                c[0] = fill_value;
             }
         }
-        p -= 1;
-        i += 1
     }
-    let mut a: u32 = 0xffffffff;
-    let mut k: u32 = 0x80000000;
-    loop {
-        let b = table[q];
-        table[q] = (k | a & b) as u32;
-        q += 7;
-        k >>= 1i32;
-        a >>= 1i32;
-        if !(0 != k) {
-            break;
-        }
+
+    let mut mask: u32 = 0xffffffff;
+    let mut bit: u32 = 0x80000000;
+    let mut i = 5;
+    while bit != 0 {
+        table[i] = bit | table[i] & mask;
+        i += 7;
+        bit >>= 1;
+        mask >>= 1;
     }
 }
 
