@@ -6,25 +6,8 @@
 
 use byteorder::{ByteOrder, LittleEndian};
 
-fn prng_map_lookup(x: u32) -> u32 {
-    if x >= 0xf9 {
-        0
-    } else {
-        x + 1
-    }
-}
-
-fn prng(table: &mut [u32; 256]) -> u32 {
-    let a = table[0];
-    table[0] = prng_map_lookup(a);
-    let b = table[1];
-    table[1] = prng_map_lookup(b);
-    let c =
-        table[b.wrapping_add(2i32 as u32) as usize] ^ table[a.wrapping_add(2i32 as u32) as usize];
-    table[a.wrapping_add(2i32 as u32) as usize] = c;
-    return c;
-}
-
+/// For prng_state return new prng_state and next table entry. Used
+/// only for initializing PRNG table.
 fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
     let mut t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
 
@@ -49,48 +32,75 @@ fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
     (new_prng_state, table_entry)
 }
 
-fn prng_init(table: &mut [u32; 256], seed: u32) {
-    let mut prng_state: u32 = seed;
+struct PRNG {
+    table: [u32; 256],
+}
 
-    table[0] = 0;
-    table[1] = 103;
+impl PRNG {
+    pub fn new(seed: u32) -> Self {
+        let mut prng_state: u32 = seed;
+        let mut table: [u32; 256] = [0; 256];
 
-    for c in table[2..=251].rchunks_mut(1) {
-        match prng_state_iterate(prng_state) {
-            (new_prng_state, fill_value) => {
-                prng_state = new_prng_state;
-                c[0] = fill_value;
+        table[0] = 0;
+        table[1] = 103;
+
+        for c in table[2..=251].rchunks_mut(1) {
+            match prng_state_iterate(prng_state) {
+                (new_prng_state, fill_value) => {
+                    prng_state = new_prng_state;
+                    c[0] = fill_value;
+                }
             }
         }
+
+        let mut mask: u32 = 0xffffffff;
+        let mut bit: u32 = 0x80000000;
+        let mut i = 5;
+        while bit != 0 {
+            table[i] = bit | table[i] & mask;
+            i += 7;
+            bit >>= 1;
+            mask >>= 1;
+        }
+        PRNG { table: table }
     }
 
-    let mut mask: u32 = 0xffffffff;
-    let mut bit: u32 = 0x80000000;
-    let mut i = 5;
-    while bit != 0 {
-        table[i] = bit | table[i] & mask;
-        i += 7;
-        bit >>= 1;
-        mask >>= 1;
+    pub fn next(self: &mut Self) -> u32 {
+        let table = &mut self.table;
+        let a = table[0];
+        table[0] = Self::pseudo_map_lookup(a);
+        let b = table[1];
+        table[1] = Self::pseudo_map_lookup(b);
+        let c = table[b.wrapping_add(2i32 as u32) as usize]
+            ^ table[a.wrapping_add(2i32 as u32) as usize];
+        table[a.wrapping_add(2i32 as u32) as usize] = c;
+        c
+    }
+
+    fn pseudo_map_lookup(x: u32) -> u32 {
+        if x >= 0xf9 {
+            0
+        } else {
+            x + 1
+        }
     }
 }
 
 pub fn decrypt(input: &mut [u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(input.len());
-    let mut table: [u32; 256] = [0; 256];
 
-    prng_init(&mut table, LittleEndian::read_u32(input));
+    let mut prng = PRNG::new(LittleEndian::read_u32(input));
     result.extend_from_slice(&input[0..4]);
 
     let chunks_iter = input[4..].chunks_exact(4);
     let remainder = chunks_iter.remainder();
     for chunk in chunks_iter {
         let mut out: [u8; 4] = [0; 4];
-        LittleEndian::write_u32(&mut out, LittleEndian::read_u32(&chunk) ^ prng(&mut table));
+        LittleEndian::write_u32(&mut out, LittleEndian::read_u32(&chunk) ^ prng.next());
         result.extend_from_slice(&out);
     }
     for chunk in remainder.iter() {
-        result.push(*chunk ^ prng(&mut table) as u8);
+        result.push(*chunk ^ prng.next() as u8);
     }
     result
 }
