@@ -4,6 +4,8 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
+use byteorder::{ByteOrder, LittleEndian};
+
 fn prng_map_lookup(x: u32) -> u32 {
     if x >= 0xf9 {
         0
@@ -79,39 +81,24 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
     }
 }
 
-// it seeds random number generator with a key
-// then it uses generated random numbers to XOR the input
-pub fn decrypt(input: &mut [u8]) {
+pub fn decrypt(input: &mut [u8]) -> Vec<u8> {
+    let mut result = Vec::with_capacity(input.len());
     let mut table: [u32; 256] = [0; 256];
-    let mut p: *mut u32 = input.as_mut_ptr() as *mut u32;
-    prng_init(&mut table, 1234567890u32);
-    table[254usize] = 0i32 as u32;
-    let fresh0 = p;
-    unsafe {
-        p = p.offset(1);
+
+    prng_init(&mut table, LittleEndian::read_u32(input));
+    result.extend_from_slice(&input[0..4]);
+
+    let chunks_iter = input[4..].chunks_exact(4);
+    let remainder = chunks_iter.remainder();
+    for chunk in chunks_iter {
+        let mut out: [u8; 4] = [0; 4];
+        LittleEndian::write_u32(&mut out, LittleEndian::read_u32(&chunk) ^ prng(&mut table));
+        result.extend_from_slice(&out);
     }
-    unsafe {
-        prng_init(&mut table, *fresh0);
+    for chunk in remainder.iter() {
+        result.push(*chunk ^ prng(&mut table) as u8);
     }
-    let len = (input.len() - 4) / 4;
-    let mut i = 0;
-    while i < len {
-        let fresh1 = p;
-        unsafe {
-            p = p.offset(1);
-            *fresh1 ^= prng(&mut table);
-        }
-        i += 1
-    }
-    let len = (input.len() - 4) % 4;
-    let mut i = 0;
-    while i < len {
-        unsafe {
-            let ref mut fresh2 = *(p as *mut u8);
-            *fresh2 = (*fresh2 as u32 ^ prng(&mut table)) as u8;
-        }
-        i += 1
-    }
+    result
 }
 
 #[cfg(test)]

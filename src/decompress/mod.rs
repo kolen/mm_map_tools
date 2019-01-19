@@ -107,11 +107,11 @@ fn checksum(data: &[u8]) -> u32 {
     sum
 }
 
-fn deobfuscate(input: &mut [u8]) -> Result<(), DecompressError> {
-    decrypt(input);
-    let header = Header::from_bytes(input)?;
-    if header.checksum_deobfuscated == checksum(&input[HEADER_SIZE..]) {
-        Ok(())
+fn deobfuscate(input: &mut [u8]) -> Result<(Vec<u8>), DecompressError> {
+    let deobfuscated = decrypt(input);
+    let header = Header::from_bytes(&deobfuscated)?;
+    if header.checksum_deobfuscated == checksum(&deobfuscated[HEADER_SIZE..]) {
+        Ok(deobfuscated)
     } else {
         Err(DecompressError::DeobfuscateChecksumNotMatch)
     }
@@ -134,12 +134,12 @@ pub fn decompress(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     }
     // mmdecrypt.c is not thread-safe
     let _lock = EXTERNAL_LIB_LOCK.lock().unwrap();
-    deobfuscate(input)?;
-    let header = Header::from_bytes(input)?;
+    let output = deobfuscate(input)?;
+    let header = Header::from_bytes(&output)?;
     match header.compression {
-        CompressionType::Uncompressed => Ok(input[HEADER_SIZE..].to_vec()),
+        CompressionType::Uncompressed => Ok(output[HEADER_SIZE..].to_vec()),
         CompressionType::RLE => Err(DecompressError::CompressionNotSupported),
-        CompressionType::LZ77 => lz77_decompress(input),
+        CompressionType::LZ77 => lz77_decompress(&output),
     }
 }
 
