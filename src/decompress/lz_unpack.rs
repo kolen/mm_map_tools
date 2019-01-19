@@ -1,4 +1,7 @@
-// Based on:
+// Based on the "mmdecrypt.c" from SAU: Sprite and Archive Utility
+// project:
+//
+// https://github.com/saniv/sau/blob/master/unsorted/scraps/mmdecrypt.c
 //
 // Magic & Mayhem decryption and unpacking routines
 // Author: Nikita Sadkov
