@@ -81,38 +81,36 @@ fn prng_init(table: &mut [u32; 256], mut seed: u32) {
 
 // it seeds random number generator with a key
 // then it uses generated random numbers to XOR the input
-pub fn decrypt(Input: &mut [u8]) {
-    let mut I: usize = 0;
-    let mut Len: usize = 0;
-    let mut Table: [u32; 256] = [0; 256];
-    let mut P: *mut u32 = Input.as_mut_ptr() as *mut u32;
-    prng_init(&mut Table, 1234567890u32);
-    Table[254usize] = 0i32 as u32;
-    let fresh0 = P;
+pub fn decrypt(input: &mut [u8]) {
+    let mut table: [u32; 256] = [0; 256];
+    let mut p: *mut u32 = input.as_mut_ptr() as *mut u32;
+    prng_init(&mut table, 1234567890u32);
+    table[254usize] = 0i32 as u32;
+    let fresh0 = p;
     unsafe {
-        P = P.offset(1);
+        p = p.offset(1);
     }
     unsafe {
-        prng_init(&mut Table, *fresh0);
+        prng_init(&mut table, *fresh0);
     }
-    Len = (Input.len() - 4) / 4;
-    I = 0;
-    while I < Len {
-        let fresh1 = P;
+    let len = (input.len() - 4) / 4;
+    let mut i = 0;
+    while i < len {
+        let fresh1 = p;
         unsafe {
-            P = P.offset(1);
-            *fresh1 ^= prng(&mut Table);
+            p = p.offset(1);
+            *fresh1 ^= prng(&mut table);
         }
-        I += 1
+        i += 1
     }
-    Len = (Input.len() - 4) % 4;
-    I = 0;
-    while I < Len {
+    let len = (input.len() - 4) % 4;
+    let mut i = 0;
+    while i < len {
         unsafe {
-            let ref mut fresh2 = *(P as *mut u8);
-            *fresh2 = (*fresh2 as u32 ^ prng(&mut Table)) as u8;
+            let ref mut fresh2 = *(p as *mut u8);
+            *fresh2 = (*fresh2 as u32 ^ prng(&mut table)) as u8;
         }
-        I += 1
+        i += 1
     }
 }
 
