@@ -25,15 +25,17 @@ fn prng(table: &mut [u32; 256]) -> u32 {
 
 fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
     let mut t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
-    unsafe {
-        *(&mut t as *mut i64 as *mut u32).offset(1) <<= 16;
-    }
+
+    let mut t_hi: u32 = (t >> 32) as u32;
+    t_hi = t_hi.wrapping_shl(16);
+
+    let t_lo: u32 = t as u32;
+
+    t = (((t_hi as u64) << 32) | (t_lo as u64)) as i64;
     t = (t as u64).wrapping_add(0xffff00003039) as i64 as i64;
+
     let new_prng_state = t as u32;
-    let table_entry: u32;
-    unsafe {
-        table_entry = *(&mut t as *mut i64 as *mut u32).offset(1) & 0xffff0000 | t as u32 >> 16;
-    }
+    let table_entry: u32 = (((t >> 32) as u32) & 0xffff_0000u32) | ((t as u32) >> 16);
 
     assert_eq!(
         (new_prng_state & 0xffff_0000) >> 16,
