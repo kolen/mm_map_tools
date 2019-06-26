@@ -159,7 +159,7 @@ named_args!(
                   center_y: center_y,
                   unknown1: unknown1,
                   unknown2: unknown2,
-                  name: name.trim_right_matches('\0').to_string(),
+                  name: name.trim_end_matches('\0').to_string(),
                   image: pixels(content, rows, width, height,
                                 &pallettes[pallette_index as usize])
               })));
