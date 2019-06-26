@@ -9,6 +9,7 @@ pub fn test_file_path(filename: &str) -> PathBuf {
     Path::new(&prefix).join(Path::new(filename))
 }
 
+#[allow(dead_code)]
 pub fn test_file_contents(filename: &str) -> Vec<u8> {
     let mut buffer = Vec::new();
     let mut file = File::open(&test_file_path(filename)).unwrap();
@@ -16,6 +17,7 @@ pub fn test_file_contents(filename: &str) -> Vec<u8> {
     buffer
 }
 
+#[allow(dead_code)]
 pub fn test_file_compressed_contents(filename: &str) -> Vec<u8> {
     read_decompressed(&test_file_path(filename)).unwrap()
 }
