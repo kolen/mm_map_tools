@@ -81,7 +81,6 @@ impl From<std::io::Error> for DecompressError {
     }
 }
 
-static PRNG_INITIALIZED: Once = Once::new();
 lazy_static! {
     static ref EXTERNAL_LIB_LOCK: Mutex<()> = Mutex::new(());
 }
