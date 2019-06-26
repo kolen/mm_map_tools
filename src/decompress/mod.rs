@@ -8,7 +8,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::sync::{Mutex, Once};
+use std::sync::Mutex;
 
 #[derive(Debug)]
 enum CompressionType {
