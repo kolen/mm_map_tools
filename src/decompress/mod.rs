@@ -155,6 +155,7 @@ mod tests {
     use super::*;
     use test_utils::*;
     #[test]
+    #[ignore]
     fn test_decompress() {
         let decoded = read_decompressed(&test_file_path("Realms/Celtic/Forest/CFsec50.map"));
         assert!(decoded.is_ok(), "Decompress failed: {:?}", decoded);
@@ -162,6 +163,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_too_short() {
         let decoded = decompress(&mut vec![0; 10]);
         match decoded.unwrap_err() {

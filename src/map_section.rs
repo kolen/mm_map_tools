@@ -48,6 +48,7 @@ mod tests {
     use super::*;
     use test_utils;
     #[test]
+    #[ignore]
     fn test_from_contents() {
         let contents =
             test_utils::test_file_compressed_contents("Realms/Celtic/Forest/CFsec50.map");

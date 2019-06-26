@@ -17,3 +17,6 @@ Renders map section to image file.
 render_map_section input_map_section.map output.png
 ```
 
+## Running tests
+
+By default, tests requiring original Magic & Mayhem files are ignored with `#[ignore]`, to run them, specify M&M path in `MM_PATH` env variable and use `cargo test -- --ignored`.

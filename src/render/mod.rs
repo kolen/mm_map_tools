@@ -188,6 +188,7 @@ mod tests {
     use test_utils::*;
 
     #[test]
+    #[ignore]
     fn test_render_map_section() {
         let map_section = MapSection::from_contents(test_file_compressed_contents(
             "Realms/Celtic/Forest/CFSec10.map",

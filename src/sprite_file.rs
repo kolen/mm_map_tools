@@ -193,6 +193,7 @@ mod tests {
     use test_utils::*;
 
     #[test]
+    #[ignore]
     fn test_load() {
         let f = File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap();
         SpriteFile::parse(f);
