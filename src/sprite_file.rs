@@ -1,4 +1,12 @@
-use nom::{le_i32, le_u32, le_u8, rest};
+use nom::{
+    bytes::complete::{tag, take},
+    combinator::{map, map_res},
+    lib::std::str::from_utf8,
+    multi::count,
+    number::complete::{le_i32, le_u32, le_u8},
+    sequence::tuple,
+    IResult,
+};
 
 use image::Pixel;
 use image::{ImageBuffer, Rgb, Rgba, RgbaImage};
@@ -62,11 +70,12 @@ impl SpriteFile {
             .iter()
             .filter_map(|&offset| {
                 Some(
-                    frame(&payload[offset as usize..], &header.pallettes)
+                    frame(&header.pallettes)(&payload[offset as usize..])
                         .expect(&format!("Can't decode frame at {}", offset))
                         .1,
                 )
-            }).collect();
+            })
+            .collect();
 
         SpriteFile {
             pallettes: header.pallettes,
@@ -122,7 +131,8 @@ fn pixels(
             is_skip: false,
             pixels_left: 0,
             pallette: pallette,
-        }.chain(iter::repeat(Rgba8 { data: [0, 0, 0, 0] }))
+        }
+        .chain(iter::repeat(Rgba8 { data: [0, 0, 0, 0] }))
         .take(width as usize)
     });
     for pixel in iter_rgba {
@@ -134,58 +144,63 @@ fn pixels(
     RgbaImage::from_raw(width, height, bytes).expect("Can't construct RgbaImage")
 }
 
-named_args!(
-    frame<'a>(pallettes: &'a Vec<Pallette>) <&'a [u8], Frame>,
-    do_parse!(content: peek!(rest) >>
-              _size: le_u32 >>
-              width: le_u32 >>
-              height: le_u32 >>
-              center_x: le_i32 >>
-              center_y: le_i32 >>
-              name: take_str!(8) >>
-              pallette_index: le_u32 >>
-              unknown1: le_u32 >>
-              unknown2: le_u32 >>
-              rows: count!(
-                  do_parse!(r: le_u32 >>
-                            p: le_u32 >>
-                            (LineOffsets { runs_offset: r,
-                                           pixels_offset: p })),
-                  height as usize) >>
-              (Frame {
-                  width: width,
-                  height: height,
-                  center_x: center_x,
-                  center_y: center_y,
-                  unknown1: unknown1,
-                  unknown2: unknown2,
-                  name: name.trim_end_matches('\0').to_string(),
-                  image: pixels(content, rows, width, height,
-                                &pallettes[pallette_index as usize])
-              })));
+fn frame(pallettes: &Vec<Pallette>) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_ {
+    move |i: &[u8]| {
+        let (input, (_size, width, height, center_x, center_y)) =
+            tuple((le_u32, le_u32, le_u32, le_i32, le_i32))(i)?;
+        let (input, name) = map(map_res(take(8usize), from_utf8), String::from)(input)?;
+        let (input, pallette_index) = le_u32(input)?;
+        let (input, (unknown1, unknown2)) = tuple((le_u32, le_u32))(input)?;
+        let (input, rows) = count(
+            map(tuple((le_u32, le_u32)), |(runs_offset, pixels_offset)| {
+                LineOffsets {
+                    runs_offset,
+                    pixels_offset,
+                }
+            }),
+            height as usize,
+        )(input)?;
+        let image = pixels(i, rows, width, height, &pallettes[pallette_index as usize]);
 
-named!(pallette<&[u8], Vec<Rgb8> >,
-       count!(do_parse!(r: le_u8 >>
-                        g: le_u8 >>
-                        b: le_u8 >>
-                        (Rgb{data: [r, g, b]})),
-              256));
+        Ok((
+            input,
+            Frame {
+                width,
+                height,
+                center_x,
+                center_y,
+                unknown1,
+                unknown2,
+                name,
+                image,
+            },
+        ))
+    }
+}
 
-named!(header<&[u8], SpriteFileHeader>,
-    do_parse!(tag!("SPR\0") >>
-              take!(4) >>
-              take!(4) >>
-              num_frames: le_u32 >>
-              num_pallettes: le_u32 >>
-              take!(4) >>
-              pallettes: count!(pallette, num_pallettes as usize) >>
-              frame_offsets: count!(le_u32, num_frames as usize) >>
-              (SpriteFileHeader {
-                  pallettes: pallettes,
-                  frame_offsets: frame_offsets
-              })
-    )
-);
+fn pallette(i: &[u8]) -> IResult<&[u8], Pallette> {
+    count(
+        map(tuple((le_u8, le_u8, le_u8)), |(r, g, b)| Rgb {
+            data: [r, g, b],
+        }),
+        256usize,
+    )(i)
+}
+
+fn header(input: &[u8]) -> IResult<&[u8], SpriteFileHeader> {
+    let (input, (_, _, _, num_frames, num_pallettes, _)) =
+        tuple((tag("SPR\0"), le_u32, le_u32, le_u32, le_u32, le_u32))(input)?;
+    let (input, pallettes) = count(pallette, num_pallettes as usize)(input)?;
+    let (input, frame_offsets) = count(le_u32, num_frames as usize)(input)?;
+
+    Ok((
+        input,
+        SpriteFileHeader {
+            pallettes,
+            frame_offsets,
+        },
+    ))
+}
 
 #[cfg(test)]
 mod tests {
