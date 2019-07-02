@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate nom;
 extern crate image;
 extern crate byteorder;
