@@ -1,3 +1,4 @@
+use nom::{combinator::verify, error::ErrorKind, number::complete::le_u32, sequence::tuple};
 use std::convert::TryInto;
 
 pub struct MapSection {
@@ -16,15 +17,19 @@ const TILES_OFFSET: usize = 0x4c;
 
 impl MapSection {
     pub fn from_contents(contents: Vec<u8>) -> Self {
-        assert_eq!(
-            6,
-            u32::from_le_bytes(contents[0x0..0x4].try_into().unwrap())
-        );
+        let (_, (_, size_x, size_y, size_z)) = tuple::<_, _, (_, ErrorKind), _>((
+            verify(le_u32, |v| *v == 6),
+            le_u32,
+            le_u32,
+            le_u32,
+        ))(&contents)
+        .unwrap();
+
         MapSection {
-            size_x: u32::from_le_bytes(contents[0x4..0x8].try_into().unwrap()),
-            size_y: u32::from_le_bytes(contents[0x8..0xc].try_into().unwrap()),
-            size_z: u32::from_le_bytes(contents[0xc..0x10].try_into().unwrap()),
-            contents: contents,
+            size_x,
+            size_y,
+            size_z,
+            contents,
         }
     }
 
