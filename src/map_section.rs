@@ -1,4 +1,4 @@
-use byteorder::{ByteOrder, LittleEndian};
+use std::convert::TryInto;
 
 pub struct MapSection {
     pub size_x: u32,
@@ -16,11 +16,14 @@ const TILES_OFFSET: usize = 0x4c;
 
 impl MapSection {
     pub fn from_contents(contents: Vec<u8>) -> Self {
-        assert_eq!(6, LittleEndian::read_u32(&contents));
+        assert_eq!(
+            6,
+            u32::from_le_bytes(contents[0x0..0x4].try_into().unwrap())
+        );
         MapSection {
-            size_x: LittleEndian::read_u32(&contents[0x4..]),
-            size_y: LittleEndian::read_u32(&contents[0x8..]),
-            size_z: LittleEndian::read_u32(&contents[0xc..]),
+            size_x: u32::from_le_bytes(contents[0x4..0x8].try_into().unwrap()),
+            size_y: u32::from_le_bytes(contents[0x8..0xc].try_into().unwrap()),
+            size_z: u32::from_le_bytes(contents[0xc..0x10].try_into().unwrap()),
             contents: contents,
         }
     }
@@ -34,7 +37,7 @@ impl MapSection {
         let offset: usize =
             floor_bytes * (z as usize) + row_bytes * (y as usize) + TILE_BYTES * (x as usize);
         Tile {
-            id: LittleEndian::read_u16(&self.tiles_data()[offset..]),
+            id: u16::from_le_bytes(self.tiles_data()[offset..offset + 2].try_into().unwrap()),
         }
     }
 
