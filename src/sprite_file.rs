@@ -1,19 +1,18 @@
+use image::Pixel;
+use image::{ImageBuffer, Rgb, Rgba, RgbaImage};
 use nom::{
     bytes::complete::{tag, take},
     combinator::{map, map_res},
-    lib::std::str::from_utf8,
     multi::count,
     number::complete::{le_i32, le_u32, le_u8},
     sequence::tuple,
     IResult,
 };
-
-use image::Pixel;
-use image::{ImageBuffer, Rgb, Rgba, RgbaImage};
 use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::iter;
+use std::str::from_utf8;
 
 type Rgb8 = Rgb<u8>;
 type Rgba8 = Rgba<u8>;
