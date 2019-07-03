@@ -7,7 +7,7 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
-use byteorder::{ByteOrder, LittleEndian};
+use std::convert::TryInto;
 
 /// For prng_state return new prng_state and next table entry. Used
 /// only for initializing PRNG table.
@@ -92,15 +92,14 @@ impl PRNG {
 pub fn decrypt(input: &mut [u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(input.len());
 
-    let mut prng = PRNG::new(LittleEndian::read_u32(input));
+    let mut prng = PRNG::new(u32::from_le_bytes(input[..4].try_into().unwrap()));
     result.extend_from_slice(&input[0..4]);
 
     let chunks_iter = input[4..].chunks_exact(4);
     let remainder = chunks_iter.remainder();
     for chunk in chunks_iter {
-        let mut out: [u8; 4] = [0; 4];
-        LittleEndian::write_u32(&mut out, LittleEndian::read_u32(&chunk) ^ prng.next());
-        result.extend_from_slice(&out);
+        let current = u32::from_le_bytes(chunk.try_into().unwrap()) ^ prng.next();
+        result.extend_from_slice(&u32::to_le_bytes(current));
     }
     for chunk in remainder.iter() {
         result.push(*chunk ^ prng.next() as u8);

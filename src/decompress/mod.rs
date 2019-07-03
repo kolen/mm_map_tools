@@ -2,7 +2,7 @@ mod deobfuscate;
 mod lz_unpack;
 use self::deobfuscate::decrypt;
 use self::lz_unpack::lz_unpack;
-use byteorder::{ByteOrder, LittleEndian};
+use std::convert::TryInto;
 use std::error;
 use std::fmt;
 use std::fs::File;
@@ -31,11 +31,11 @@ const HEADER_SIZE: usize = 4 * 5;
 impl Header {
     pub fn from_bytes(input: &[u8]) -> Result<Header, DecompressError> {
         Ok(Header {
-            seed: LittleEndian::read_u32(&input[0x0..]),
-            unpacked_size: LittleEndian::read_u32(&input[0x4..]),
-            checksum_deobfuscated: LittleEndian::read_u32(&input[0x8..]),
-            checksum_uncompressed: LittleEndian::read_u32(&input[0xc..]),
-            compression: match LittleEndian::read_u32(&input[0x10..]) {
+            seed: u32::from_le_bytes(input[0x0..0x4].try_into()?),
+            unpacked_size: u32::from_le_bytes(input[0x4..0x8].try_into()?),
+            checksum_deobfuscated: u32::from_le_bytes(input[0x8..0xc].try_into()?),
+            checksum_uncompressed: u32::from_le_bytes(input[0xc..0x10].try_into()?),
+            compression: match u32::from_le_bytes(input[0x10..0x14].try_into()?) {
                 x if x == CompressionType::Uncompressed as u32 => CompressionType::Uncompressed,
                 x if x == CompressionType::RLE as u32 => CompressionType::RLE,
                 x if x == CompressionType::LZ77 as u32 => CompressionType::LZ77,
@@ -53,6 +53,7 @@ pub enum DecompressError {
     CompressionNotSupported,
     ContentTooSmall,
     FileError { error: std::io::Error },
+    PrematureEnd,
 }
 
 impl fmt::Display for DecompressError {
@@ -68,6 +69,7 @@ impl fmt::Display for DecompressError {
             DecompressError::CompressionNotSupported => "Compression not supported".into(),
             DecompressError::ContentTooSmall => "File contents are too small".into(),
             DecompressError::FileError { error: e } => format!("File reading error: {}", e),
+            DecompressError::PrematureEnd => "Premature end of file".into(),
         };
         write!(f, "Decompression error: {}", suberror)
     }
@@ -81,6 +83,12 @@ impl From<std::io::Error> for DecompressError {
     }
 }
 
+impl From<core::array::TryFromSliceError> for DecompressError {
+    fn from(error: core::array::TryFromSliceError) -> Self {
+        DecompressError::PrematureEnd
+    }
+}
+
 lazy_static! {
     static ref EXTERNAL_LIB_LOCK: Mutex<()> = Mutex::new(());
 }
@@ -91,7 +99,7 @@ fn checksum(data: &[u8]) -> u32 {
     // Change to exact_chunks when it stabilize
     for chunk in data.chunks(4) {
         let element: u32 = if chunk.len() == 4 {
-            LittleEndian::read_u32(chunk)
+            u32::from_le_bytes(chunk.try_into().unwrap())
         } else {
             0 // Incomplete 32-bit uint is treated as zero
         };
@@ -158,7 +166,10 @@ mod tests {
     fn test_decompress() {
         let decoded = read_decompressed(&test_file_path("Realms/Celtic/Forest/CFsec50.map"));
         assert!(decoded.is_ok(), "Decompress failed: {:?}", decoded);
-        assert_eq!(6, LittleEndian::read_u32(&decoded.unwrap()));
+        assert_eq!(
+            6,
+            u32::from_le_bytes(decoded.unwrap()[..4].try_into().unwrap())
+        );
     }
 
     #[test]
