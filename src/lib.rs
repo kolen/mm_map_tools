@@ -1,6 +1,5 @@
 extern crate nom;
 extern crate image;
-extern crate byteorder;
 #[macro_use]
 extern crate lazy_static;
 extern crate nalgebra;
