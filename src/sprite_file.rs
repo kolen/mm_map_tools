@@ -117,7 +117,7 @@ struct LineOffsets {
 
 fn pixels(
     input: &[u8],
-    lines: Vec<LineOffsets>, // TODO: doesn't have to be specifically a vector
+    lines: impl Iterator<Item = LineOffsets>,
     width: u32,
     height: u32,
     pallette: &Pallette,
@@ -165,7 +165,13 @@ fn frame(pallettes: &Vec<Pallette>) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> +
             }),
             height as usize,
         )(input)?;
-        let image = pixels(i, rows, width, height, &pallettes[pallette_index as usize]);
+        let image = pixels(
+            i,
+            rows.into_iter(),
+            width,
+            height,
+            &pallettes[pallette_index as usize],
+        );
 
         Ok((
             input,
