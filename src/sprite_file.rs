@@ -117,14 +117,21 @@ struct LineOffsets {
 
 fn pixels(
     input: &[u8],
-    lines: Vec<LineOffsets>,
+    lines: Vec<LineOffsets>, // TODO: doesn't have to be specifically a vector
     width: u32,
     height: u32,
     pallette: &Pallette,
 ) -> RgbaImage {
-    let mut bytes: Vec<u8> = Vec::with_capacity(width as usize * height as usize * 4);
-    let iter_rgba = lines.into_iter().flat_map(|offsets| {
-        IterPixelRow {
+    let mut image = ImageBuffer::new(width, height);
+
+    // rows_mut crashes on zero-width images:
+    // https://github.com/image-rs/image/issues/994
+    if width == 0 || height == 0 {
+        return image;
+    }
+
+    for (offsets, output_row) in lines.into_iter().zip(image.rows_mut()) {
+        let input_pixels = IterPixelRow {
             runs: &input[offsets.runs_offset as usize..],
             pixels: &input[offsets.pixels_offset as usize..],
             is_skip: false,
@@ -132,16 +139,14 @@ fn pixels(
             pallette: pallette,
         }
         .chain(iter::repeat(Rgba([0, 0, 0, 0])))
-        .take(width as usize)
-    });
-    for pixel in iter_rgba {
-        // Will the order of channels be always correct?
-        bytes.extend_from_slice(&pixel.channels())
+        .take(width as usize);
+
+        for (input_pixel, output_pixel) in input_pixels.zip(output_row) {
+            *output_pixel = input_pixel;
+        }
     }
 
-    debug_assert!(bytes.len() == (width as usize) * (height as usize) * 4);
-
-    RgbaImage::from_raw(width, height, bytes).expect("Can't construct RgbaImage")
+    image
 }
 
 fn frame(pallettes: &Vec<Pallette>) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_ {
