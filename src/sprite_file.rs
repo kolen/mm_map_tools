@@ -50,10 +50,10 @@ impl fmt::Debug for Frame {
     }
 }
 
-fn indexed_to_rgba(pixel: Option<u8>, pallette: Pallette) -> Rgba8 {
+fn indexed_to_rgba(pixel: Option<u8>, pallette: Pallette) -> Rgba<u8> {
     match pixel {
         Some(index) => pallette[index as usize].to_rgba(),
-        None => Rgba8 { data: [0, 0, 0, 0] },
+        None => Rgba([0, 0, 0, 0]),
     }
 }
 
@@ -101,7 +101,7 @@ impl<'a> Iterator for IterPixelRow<'a> {
         }
         self.pixels_left -= 1;
         if self.is_skip {
-            Some(Rgba8 { data: [0, 0, 0, 0] })
+            Some(Rgba([0, 0, 0, 0]))
         } else {
             let pixel = self.pixels[0];
             self.pixels = &self.pixels[1..];
@@ -131,11 +131,12 @@ fn pixels(
             pixels_left: 0,
             pallette: pallette,
         }
-        .chain(iter::repeat(Rgba8 { data: [0, 0, 0, 0] }))
+        .chain(iter::repeat(Rgba([0, 0, 0, 0])))
         .take(width as usize)
     });
     for pixel in iter_rgba {
-        bytes.extend_from_slice(&pixel.data)
+        // Will the order of channels be always correct?
+        bytes.extend_from_slice(&pixel.channels())
     }
 
     debug_assert!(bytes.len() == (width as usize) * (height as usize) * 4);
@@ -179,9 +180,7 @@ fn frame(pallettes: &Vec<Pallette>) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> +
 
 fn pallette(i: &[u8]) -> IResult<&[u8], Pallette> {
     count(
-        map(tuple((le_u8, le_u8, le_u8)), |(r, g, b)| Rgb {
-            data: [r, g, b],
-        }),
+        map(tuple((le_u8, le_u8, le_u8)), |(r, g, b)| Rgb([r, g, b])),
         256usize,
     )(i)
 }
