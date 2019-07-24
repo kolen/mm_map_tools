@@ -1,6 +1,6 @@
 use image;
 use map_section::MapSection;
-use nalgebra::{Matrix, Matrix2, Matrix2x3, ArrayStorage, Vector2, Vector3, U1, U3};
+use nalgebra::{Matrix, Matrix2x3, ArrayStorage, Vector2, Vector3, U1, U3};
 use sprite_file::SpriteFile;
 use std::cmp;
 
