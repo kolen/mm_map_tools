@@ -1,6 +1,6 @@
 use image;
 use map_section::MapSection;
-use nalgebra::{Matrix, Matrix2, Matrix2x3, MatrixArray, Vector2, Vector3, U1, U3};
+use nalgebra::{Matrix, Matrix2, Matrix2x3, ArrayStorage, Vector2, Vector3, U1, U3};
 use sprite_file::SpriteFile;
 use std::cmp;
 
@@ -12,7 +12,7 @@ const TILE_HALF_W: i32 = TILE_W / 2;
 const TILE_HALF_H: i32 = TILE_H / 2;
 const TILE_Z_OFFSET: i32 = 48 - 32; // TODO: figure out
 
-type TileCoordinates = Matrix<i32, U3, U1, MatrixArray<i32, U3, U1>>;
+type TileCoordinates = Matrix<i32, U3, U1, ArrayStorage<i32, U3, U1>>;
 
 fn rotate_tile_coordinates(
     source: TileCoordinates,
