@@ -1,7 +1,5 @@
 extern crate nom;
 extern crate image;
-#[macro_use]
-extern crate lazy_static;
 extern crate nalgebra;
 
 pub mod sprite_file;

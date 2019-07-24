@@ -8,7 +8,6 @@ use std::fmt;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::sync::Mutex;
 
 #[derive(Debug)]
 enum CompressionType {
@@ -103,10 +102,6 @@ impl From<PrematureEnd> for DecompressError {
     }
 }
 
-lazy_static! {
-    static ref EXTERNAL_LIB_LOCK: Mutex<()> = Mutex::new(());
-}
-
 fn checksum(data: &[u8]) -> u32 {
     let mut sum: u32 = 0;
     let mut odd: bool = false;
@@ -150,8 +145,6 @@ pub fn decompress(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     if input.len() <= 20 {
         return Err(DecompressError::ContentTooSmall);
     }
-    // mmdecrypt.c is not thread-safe
-    let _lock = EXTERNAL_LIB_LOCK.lock().unwrap();
     let output = deobfuscate(input)?;
     let header = Header::from_bytes(&output)?;
     match header.compression {
