@@ -1,7 +1,7 @@
 mod deobfuscate;
 mod lz_unpack;
 use self::deobfuscate::decrypt;
-use self::lz_unpack::lz_unpack;
+use self::lz_unpack::{lz_unpack, PrematureEnd};
 use std::convert::TryInto;
 use std::error;
 use std::fmt;
@@ -53,7 +53,7 @@ pub enum DecompressError {
     CompressionNotSupported,
     ContentTooSmall,
     FileError { error: std::io::Error },
-    PrematureEnd,
+    PrematureEnd { context: Option<u32> },
 }
 
 impl fmt::Display for DecompressError {
@@ -69,7 +69,13 @@ impl fmt::Display for DecompressError {
             DecompressError::CompressionNotSupported => "Compression not supported".into(),
             DecompressError::ContentTooSmall => "File contents are too small".into(),
             DecompressError::FileError { error: e } => format!("File reading error: {}", e),
-            DecompressError::PrematureEnd => "Premature end of file".into(),
+            DecompressError::PrematureEnd { context: None } => "Premature end of file".into(),
+            DecompressError::PrematureEnd {
+                context: Some(line),
+            } => format!(
+                "Premature end of file when lz unpacking, lz.unpack.rs line {}",
+                line
+            ),
         };
         write!(f, "Decompression error: {}", suberror)
     }
@@ -84,8 +90,16 @@ impl From<std::io::Error> for DecompressError {
 }
 
 impl From<core::array::TryFromSliceError> for DecompressError {
-    fn from(error: core::array::TryFromSliceError) -> Self {
-        DecompressError::PrematureEnd
+    fn from(_error: core::array::TryFromSliceError) -> Self {
+        DecompressError::PrematureEnd { context: None }
+    }
+}
+
+impl From<PrematureEnd> for DecompressError {
+    fn from(error: PrematureEnd) -> Self {
+        DecompressError::PrematureEnd {
+            context: Some(error.context_line),
+        }
     }
 }
 
@@ -123,7 +137,7 @@ fn deobfuscate(input: &mut [u8]) -> Result<(Vec<u8>), DecompressError> {
 
 fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
-    let buffer = lz_unpack(&input[HEADER_SIZE..], header.unpacked_size as usize);
+    let buffer = lz_unpack(&input[HEADER_SIZE..], header.unpacked_size as usize)?;
 
     if header.checksum_uncompressed == checksum(&buffer) {
         Ok(buffer)
