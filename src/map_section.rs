@@ -3,6 +3,13 @@ use nom::{
 };
 use std::convert::TryInto;
 
+#[derive(Debug)]
+pub struct PrematureEndWhenSeekingTile {
+    x: u32,
+    y: u32,
+    z: u32,
+}
+
 pub struct MapSection {
     pub size_x: u32,
     pub size_y: u32,
@@ -32,7 +39,7 @@ impl MapSection {
         })
     }
 
-    pub fn tile_at(&self, x: u32, y: u32, z: u32) -> Tile {
+    pub fn tile_at(&self, x: u32, y: u32, z: u32) -> Result<Tile, PrematureEndWhenSeekingTile> {
         assert!(x < self.size_x);
         assert!(y < self.size_y);
         assert!(z < self.size_z);
@@ -40,9 +47,13 @@ impl MapSection {
         let row_bytes: usize = (self.size_x as usize) * TILE_BYTES;
         let offset: usize =
             floor_bytes * (z as usize) + row_bytes * (y as usize) + TILE_BYTES * (x as usize);
-        Tile {
-            id: u16::from_le_bytes(self.tiles_data()[offset..offset + 2].try_into().unwrap()),
-        }
+        Ok(Tile {
+            id: u16::from_le_bytes(
+                self.tiles_data()[offset..offset + 2]
+                    .try_into()
+                    .map_err(|_| PrematureEndWhenSeekingTile { x, y, z })?,
+            ),
+        })
     }
 
     fn tiles_data(&self) -> &[u8] {
@@ -63,6 +74,6 @@ mod tests {
         assert_eq!(20, map.size_x);
         assert_eq!(20, map.size_y);
         assert_eq!(24, map.size_z);
-        assert_eq!(0, map.tile_at(19, 19, 23).id);
+        assert_eq!(0, map.tile_at(19, 19, 23).unwrap().id);
     }
 }
