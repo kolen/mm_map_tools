@@ -68,12 +68,13 @@ fn create_map_section_list(mm_path: &Path, map_group: &str) -> ListStore {
     // TODO: error handling
     let map_section_dir = mm_path.join("Realms").join(map_group);
     let store = ListStore::new(&[String::static_type()]);
+    // FIXME: unwrap
     for entry in map_section_dir.read_dir().unwrap() {
-        let entry_path = entry.unwrap().path();
+        let entry_path = entry.unwrap().path(); // FIXME: unwrap
         if entry_path.extension() == Some(OsStr::new("map")) {
             let name = entry_path
                 .file_stem()
-                .unwrap()
+                .unwrap() // FIXME: unwrap
                 .to_string_lossy()
                 .into_owned();
             store.insert_with_values(None, &[0], &[&name]);
@@ -87,24 +88,26 @@ fn create_map_group_list(mm_path: &Path) -> ListStore {
     let store = ListStore::new(&[String::static_type()]);
     let map_groups_dir = mm_path.join("Realms");
     for realm_entry in map_groups_dir.read_dir().unwrap() {
+        // FIXME: unwrap
         if !realm_entry.as_ref().unwrap().file_type().unwrap().is_dir() {
             continue;
         }
+        // FIXME: unwrap
         for subrealm_entry in realm_entry.unwrap().path().read_dir().unwrap() {
             if !subrealm_entry
                 .as_ref()
-                .unwrap()
+                .unwrap() // FIXME: unwrap
                 .file_type()
-                .unwrap()
+                .unwrap() // FIXME: unwrap
                 .is_dir()
             {
                 continue;
             }
             let name: String = subrealm_entry
-                .unwrap()
+                .unwrap() // FIXME: unwrap
                 .path()
                 .strip_prefix(&map_groups_dir)
-                .unwrap()
+                .unwrap() // FIXME: unwrap
                 .to_string_lossy()
                 .into_owned();
             store.insert_with_values(None, &[0], &[&name]);
