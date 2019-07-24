@@ -50,13 +50,6 @@ impl fmt::Debug for Frame {
     }
 }
 
-fn indexed_to_rgba(pixel: Option<u8>, pallette: Pallette) -> Rgba<u8> {
-    match pixel {
-        Some(index) => pallette[index as usize].to_rgba(),
-        None => Rgba([0, 0, 0, 0]),
-    }
-}
-
 impl SpriteFile {
     pub fn parse(mut file: File) -> SpriteFile {
         let mut buf: Vec<u8> = Vec::new();
