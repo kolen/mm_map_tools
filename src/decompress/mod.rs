@@ -96,13 +96,10 @@ lazy_static! {
 fn checksum(data: &[u8]) -> u32 {
     let mut sum: u32 = 0;
     let mut odd: bool = false;
-    // Change to exact_chunks when it stabilize
-    for chunk in data.chunks(4) {
-        let element: u32 = if chunk.len() == 4 {
-            u32::from_le_bytes(chunk.try_into().unwrap())
-        } else {
-            0 // Incomplete 32-bit uint is treated as zero
-        };
+
+    // Last incomplete chunk of bytes (<4) is ignored
+    for chunk in data.chunks_exact(4) {
+        let element = u32::from_le_bytes(chunk.try_into().unwrap());
 
         if odd {
             sum = sum.wrapping_add(element);
