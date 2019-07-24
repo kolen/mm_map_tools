@@ -19,7 +19,7 @@ use std::rc::Rc;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
-use std::time::SystemTime;
+use std::time::Instant;
 
 macro_rules! clone {
     (@param _) => ( _ );
@@ -170,14 +170,14 @@ fn update_map_display(
     let (map_group_1, map_section_1) = (map_group.to_owned(), map_section.to_owned());
     thread::spawn(move || {
         // Errors itself don't implement Send, so we'll send strings
-        let time = SystemTime::now();
+        let time = Instant::now();
         let render_options = RenderOptions {
             max_layer: max_layer,
         };
         let map_image = renderer
             .render(&map_group_1, &map_section_1, &render_options)
             .map_err(|e| format!("Error loading map section:\n{}", e));
-        eprintln!("Rendering took {:?}", time.elapsed().unwrap());
+        eprintln!("Rendering took {:?}", time.elapsed());
         images_channel_tx.send(map_image).unwrap();
     });
 }
