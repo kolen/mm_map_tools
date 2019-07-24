@@ -192,7 +192,7 @@ mod tests {
     fn test_render_map_section() {
         let map_section = MapSection::from_contents(test_file_compressed_contents(
             "Realms/Celtic/Forest/CFSec10.map",
-        ));
+        )).unwrap();
         let sprites = SpriteFile::parse(
             File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap(),
         );

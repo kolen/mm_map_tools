@@ -17,7 +17,10 @@ fn main() {
 
     println!("{:?}", sprites_path);
 
-    let map_section = MapSection::from_contents(read_decompressed(map_section_path).unwrap());
+    let map_section = MapSection::from_contents(
+        read_decompressed(map_section_path).expect("Couldn't deobfuscate map section"),
+    )
+    .expect("Couldn't parse map section");
     let sprites = SpriteFile::parse(File::open(sprites_path).unwrap());
     let image = render_map_section(&map_section, &sprites, &RenderOptions::default());
     image.save(&args[2]).unwrap();

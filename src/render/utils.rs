@@ -95,7 +95,7 @@ impl Renderer {
                 eprintln!("Loading map section {:?}", &map_section_path);
                 Ok(MapSection::from_contents(read_decompressed(
                     map_section_path,
-                )?))
+                )?)?)
             },
             |sprites_path| {
                 eprintln!("Loading sprites {:?}", &sprites_path);

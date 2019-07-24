@@ -1,4 +1,6 @@
-use nom::{combinator::verify, error::ErrorKind, number::complete::le_u32, sequence::tuple};
+use nom::{
+    combinator::verify, error::VerboseError, number::complete::le_u32, sequence::tuple, IResult,
+};
 use std::convert::TryInto;
 
 pub struct MapSection {
@@ -16,21 +18,18 @@ const TILE_BYTES: usize = 12;
 const TILES_OFFSET: usize = 0x4c;
 
 impl MapSection {
-    pub fn from_contents(contents: Vec<u8>) -> Self {
-        let (_, (_, size_x, size_y, size_z)) = tuple::<_, _, (_, ErrorKind), _>((
-            verify(le_u32, |v| *v == 6),
-            le_u32,
-            le_u32,
-            le_u32,
-        ))(&contents)
-        .unwrap();
+    pub fn from_contents(contents: Vec<u8>) -> Result<Self, String> {
+        let result: IResult<_, _, VerboseError<_>> =
+            tuple((verify(le_u32, |v| *v == 6), le_u32, le_u32, le_u32))(&contents);
+        let (_, (_, size_x, size_y, size_z)) =
+            result.map_err(|e| format!("mps parse error: {:?}", e))?;
 
-        MapSection {
+        Ok(MapSection {
             size_x,
             size_y,
             size_z,
             contents,
-        }
+        })
     }
 
     pub fn tile_at(&self, x: u32, y: u32, z: u32) -> Tile {
@@ -60,7 +59,7 @@ mod tests {
     fn test_from_contents() {
         let contents =
             test_utils::test_file_compressed_contents("Realms/Celtic/Forest/CFsec50.map");
-        let map = MapSection::from_contents(contents);
+        let map = MapSection::from_contents(contents).unwrap();
         assert_eq!(20, map.size_x);
         assert_eq!(20, map.size_y);
         assert_eq!(24, map.size_z);
