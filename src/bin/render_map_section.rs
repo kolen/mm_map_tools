@@ -12,7 +12,7 @@ fn main() {
     let map_section_path = Path::new(&args[1]);
     let sprites_path = map_section_path
         .parent()
-        .unwrap()
+        .expect("Invalid map section path")
         .join(Path::new("Terrain.spr"));
 
     println!("{:?}", sprites_path);
