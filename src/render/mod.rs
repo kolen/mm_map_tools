@@ -14,35 +14,6 @@ const TILE_Z_OFFSET: i32 = 48 - 32; // TODO: figure out
 
 type TileCoordinates = Matrix<i32, U3, U1, ArrayStorage<i32, U3, U1>>;
 
-fn rotate_tile_coordinates(
-    source: TileCoordinates,
-    size_x: u32,
-    size_y: u32,
-    rotation_number: u8,
-) -> TileCoordinates {
-    let tilexy = Vector2::new(source.x, source.y);
-    let rotation = match rotation_number {
-        0 => Matrix2::new(1, 0, 0, 1),
-        1 => Matrix2::new(0, -1, 1, 0),
-        2 => Matrix2::new(-1, 0, 0, -1),
-        3 => Matrix2::new(0, 1, -1, 0),
-        _ => panic!("Invalid rotation number"),
-    };
-    let translation: Vector2<i32> = match rotation_number {
-        0 => Vector2::new(0, 0),
-        1 => Vector2::new(size_x as i32 - 1, 0),
-        2 => Vector2::new(size_x as i32 - 1, size_y as i32 - 1),
-        3 => Vector2::new(0, size_y as i32 - 1),
-        _ => panic!("Invalid rotation number"),
-    };
-    let tilexy2 = rotation * tilexy + translation;
-    debug_assert!(tilexy2.x >= 0);
-    debug_assert!(tilexy2.y >= 0);
-    debug_assert!(tilexy2.x < size_x as i32);
-    debug_assert!(tilexy2.x < size_y as i32);
-    Vector3::new(tilexy2.x, tilexy2.y, source.z)
-}
-
 #[derive(Debug)]
 struct CanvasSize {
     size: Vector2<u32>,
