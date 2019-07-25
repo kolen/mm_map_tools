@@ -86,6 +86,6 @@ mod tests {
         assert_eq!(20, map.size_x);
         assert_eq!(20, map.size_y);
         assert_eq!(24, map.size_z);
-        assert_eq!(0, map.tile_at(19, 19, 23).unwrap().id);
+        assert_eq!(0, map.tile_at(19, 19, 23).id);
     }
 }
