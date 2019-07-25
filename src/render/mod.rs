@@ -143,7 +143,6 @@ pub fn render_map_section(
                     tile_coordinates.y as u32,
                     tile_coordinates.z as u32,
                 )
-                .unwrap() // FIXME: return error instead
                 .id,
             canvas_size.center,
         );

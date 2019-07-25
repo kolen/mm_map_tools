@@ -31,15 +31,27 @@ impl MapSection {
         let (_, (_, size_x, size_y, size_z)) =
             result.map_err(|e| format!("mps parse error: {:?}", e))?;
 
-        Ok(MapSection {
+        let map_section = MapSection {
             size_x,
             size_y,
             size_z,
             contents,
-        })
+        };
+        // Eagerly check last tile
+        map_section
+            .tile_at_checked(size_x - 1, size_y - 1, size_z - 1)
+            .map_err(|_| "Premature end of mps file")?;
+
+        Ok(map_section)
     }
 
-    pub fn tile_at(&self, x: u32, y: u32, z: u32) -> Result<Tile, PrematureEndWhenSeekingTile> {
+    pub fn tile_at(&self, x: u32, y: u32, z: u32) -> Tile {
+        // PrematureEndWhenSeekingTile shouldn't happen as it's
+        // checked in constructor
+        self.tile_at_checked(x, y, z).unwrap()
+    }
+
+    fn tile_at_checked(&self, x: u32, y: u32, z: u32) -> Result<Tile, PrematureEndWhenSeekingTile> {
         assert!(x < self.size_x);
         assert!(y < self.size_y);
         assert!(z < self.size_z);
