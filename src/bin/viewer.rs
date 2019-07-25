@@ -64,23 +64,18 @@ fn debounced(timeout: u32, action: impl Fn() + 'static) -> impl Fn() + 'static {
     }
 }
 
-fn create_map_section_list(mm_path: &Path, map_group: &str) -> ListStore {
-    // TODO: error handling
+fn create_map_section_list(mm_path: &Path, map_group: &str) -> std::io::Result<ListStore> {
     let map_section_dir = mm_path.join("Realms").join(map_group);
     let store = ListStore::new(&[String::static_type()]);
-    // FIXME: unwrap
-    for entry in map_section_dir.read_dir().unwrap() {
-        let entry_path = entry.unwrap().path(); // FIXME: unwrap
+    for entry in map_section_dir.read_dir()? {
+        let entry_path = entry?.path();
         if entry_path.extension() == Some(OsStr::new("map")) {
-            let name = entry_path
-                .file_stem()
-                .unwrap() // FIXME: unwrap
-                .to_string_lossy()
-                .into_owned();
-            store.insert_with_values(None, &[0], &[&name]);
+            if let Some(name) = entry_path.file_stem() {
+                store.insert_with_values(None, &[0], &[&name.to_string_lossy().into_owned()]);
+            }
         }
     }
-    store
+    Ok(store)
 }
 
 fn create_map_group_list(mm_path: &Path) -> std::io::Result<ListStore> {
@@ -194,7 +189,8 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
     map_section_selector_init(&map_section_selector);
     let section_store = create_map_section_list(&mm_path, "Celtic/Forest");
-    map_section_selector.set_model(&section_store);
+    // FIXME: unwrap, should handle failure for initial load
+    map_section_selector.set_model(&section_store.expect("Can't read section directory"));
 
     let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
 
@@ -210,7 +206,8 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             let iter = map_group_selector.get_active_iter().unwrap();
             let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
             let section_store = create_map_section_list(&mm_path_buf, &group_segment);
-            map_section_selector.set_model(&section_store);
+            // FIXME: unwrap, should handle failure with error message
+            map_section_selector.set_model(&section_store.expect("Can't read section directory"));
             current_group.replace(group_segment.to_string());
         }),
     );
