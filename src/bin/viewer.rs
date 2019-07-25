@@ -83,37 +83,29 @@ fn create_map_section_list(mm_path: &Path, map_group: &str) -> ListStore {
     store
 }
 
-fn create_map_group_list(mm_path: &Path) -> ListStore {
-    // TODO: error handling
+fn create_map_group_list(mm_path: &Path) -> std::io::Result<ListStore> {
     let store = ListStore::new(&[String::static_type()]);
     let map_groups_dir = mm_path.join("Realms");
-    for realm_entry in map_groups_dir.read_dir().unwrap() {
-        // FIXME: unwrap
-        if !realm_entry.as_ref().unwrap().file_type().unwrap().is_dir() {
+    for realm_entry in map_groups_dir.read_dir()? {
+        let realm_entry_ = realm_entry?;
+        if !realm_entry_.file_type()?.is_dir() {
             continue;
         }
-        // FIXME: unwrap
-        for subrealm_entry in realm_entry.unwrap().path().read_dir().unwrap() {
-            if !subrealm_entry
-                .as_ref()
-                .unwrap() // FIXME: unwrap
-                .file_type()
-                .unwrap() // FIXME: unwrap
-                .is_dir()
-            {
+        for subrealm_entry in realm_entry_.path().read_dir().unwrap() {
+            let subrealm_entry_ = subrealm_entry?;
+            if !subrealm_entry_.file_type()?.is_dir() {
                 continue;
             }
-            let name: String = subrealm_entry
-                .unwrap() // FIXME: unwrap
+            let name: String = subrealm_entry_
                 .path()
                 .strip_prefix(&map_groups_dir)
-                .unwrap() // FIXME: unwrap
+                .unwrap() // Should always have that prefix
                 .to_string_lossy()
                 .into_owned();
             store.insert_with_values(None, &[0], &[&name]);
         }
     }
-    store
+    Ok(store)
 }
 
 fn map_group_selector_init(map_group_selector: &ComboBox) {
@@ -195,7 +187,8 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let map_group_selector: ComboBox = builder.get_object("map_group_selector").unwrap();
     map_group_selector_init(&map_group_selector);
-    let map_group_store = create_map_group_list(&mm_path);
+    // FIXME: unwrap, should handle failure for initial load
+    let map_group_store = create_map_group_list(&mm_path).expect("Map group list failed");
     map_group_selector.set_model(&map_group_store);
 
     let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
