@@ -13,23 +13,28 @@ pub struct PrematureEnd {
     pub context_line: u32,
 }
 
-struct PackedDataReader<'a> {
-    iter: std::slice::Iter<'a, u8>,
+struct PackedDataReader<I: Iterator<Item = u8>> {
+    iter: I,
 }
 
-impl<'a> PackedDataReader<'a> {
+impl<I: Iterator<Item = u8>> PackedDataReader<I> {
     fn read(&mut self, context_line: u32) -> Result<u32, PrematureEnd> {
         self.iter
             .next()
-            .map(|a| *a as u32)
+            .map(|a| a as u32)
             .ok_or(PrematureEnd { context_line })
     }
 }
 
-pub fn lz_unpack(input: &[u8], unpacked_size: usize) -> Result<Vec<u8>, PrematureEnd> {
+pub fn lz_unpack(
+    input: impl IntoIterator<Item = u8>,
+    unpacked_size: usize,
+) -> Result<Vec<u8>, PrematureEnd> {
     let mut output: Vec<u8> = Vec::with_capacity(unpacked_size);
 
-    let mut reader = PackedDataReader { iter: input.iter() };
+    let mut reader = PackedDataReader {
+        iter: input.into_iter(),
+    };
 
     let mut lz_dict: [u8; 4096] = [0; 4096];
     let mut bit_ptr: u8 = 0x80;
