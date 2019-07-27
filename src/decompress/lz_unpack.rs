@@ -74,20 +74,20 @@ where
     let mut back_ref_len: i32 = 0;
     loop {
         let bit = *bit_ptr;
-        if bit as i32 == 0x80 {
+        if bit == 0x80 {
             *lz_value = reader.read(line!())?;
             *count = *count_save;
         }
-        if 0 != bit as u32 & *lz_value {
+        if bit as u32 & *lz_value != 0 {
             back_ref_len = (back_ref_len as u32 | low_bit) as i32
         }
         low_bit >>= 1;
-        let next_bit_4: i8 = (bit as i32 >> 1) as i8;
-        *bit_ptr = next_bit_4 as u8;
-        if 0 == next_bit_4 {
+        let next_bit = bit >> 1;
+        *bit_ptr = next_bit;
+        if next_bit == 0 {
             *bit_ptr = 0x80;
         }
-        if !(0 != low_bit) {
+        if low_bit == 0 {
             break;
         }
     }
