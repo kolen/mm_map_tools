@@ -26,6 +26,35 @@ impl<I: Iterator<Item = u8>> PackedDataReader<I> {
     }
 }
 
+fn back_ref_off<I>(reader: &mut PackedDataReader<I>, bit: &mut u8, bit_ptr: &mut u8, lz_value: &mut u32) -> Result<i32, PrematureEnd>
+where
+    I: Iterator<Item = u8>,
+{
+    let mut back_ref_bit: u32 = 0x800;
+    let mut back_ref_off: i32 = 0;
+
+    loop {
+        *bit = *bit_ptr;
+        if *bit as i32 == 0x80 {
+            *lz_value = reader.read(line!())?;
+        }
+        if 0 != *bit as u32 & *lz_value {
+            back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
+        }
+        back_ref_bit >>= 1;
+        let next_bit_3: i8 = (*bit as i32 >> 1) as i8;
+        *bit_ptr = next_bit_3 as u8;
+        if 0 == next_bit_3 {
+            *bit_ptr = 0x80 as u8
+        }
+        if !(0 != back_ref_bit) {
+            break;
+        }
+    }
+
+    Ok(back_ref_off)
+}
+
 pub fn lz_unpack(
     input: impl IntoIterator<Item = u8>,
     unpacked_size: usize,
@@ -82,29 +111,11 @@ pub fn lz_unpack(
             count_save = count;
             dict_index = dict_index as u16 as i32 + 1 & 0xfff
         } else {
-            let mut back_ref_bit: u32 = 0x800;
-            let mut back_ref_off: i32 = 0;
-            loop {
-                bit = bit_ptr;
-                if bit as i32 == 0x80 {
-                    lz_value = reader.read(line!())?;
-                }
-                if 0 != bit as u32 & lz_value {
-                    back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
-                }
-                back_ref_bit >>= 1;
-                let next_bit_3: i8 = (bit as i32 >> 1) as i8;
-                bit_ptr = next_bit_3 as u8;
-                if 0 == next_bit_3 {
-                    bit_ptr = 0x80 as u8
-                }
-                if !(0 != back_ref_bit) {
-                    break;
-                }
-            }
-            if 0 == back_ref_off {
+            let back_ref_off_ = back_ref_off(&mut reader, &mut bit, &mut bit_ptr, &mut lz_value)?;
+            if back_ref_off_ == 0 {
                 return Ok(output);
             }
+
             let mut low_bit: u32 = 8;
             let mut back_ref_len: i32 = 0;
             loop {
@@ -129,7 +140,7 @@ pub fn lz_unpack(
             let mut back_ref_i: i32 = 0;
             if back_ref_len + 1 >= 0 {
                 loop {
-                    let value_2 = lz_dict[(back_ref_off + back_ref_i & 0xfff) as usize];
+                    let value_2 = lz_dict[(back_ref_off_ + back_ref_i & 0xfff) as usize];
                     output.push(value_2);
                     count += 1;
                     count_save = count;
