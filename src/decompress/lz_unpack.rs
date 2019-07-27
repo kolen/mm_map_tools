@@ -119,25 +119,25 @@ pub fn lz_unpack(
         let value_bit: i32 = (lz_value & bit as u32) as i32;
         let next_bit: i8 = (bit as i32 >> 1) as i8;
         bit_ptr = next_bit as u8;
-        if 0 == next_bit {
-            bit_ptr = 0x80 as u8
+        if next_bit == 0 {
+            bit_ptr = 0x80
         }
-        if 0 != value_bit {
-            let mut high_bit: u32 = 0x80 as u32;
+        if value_bit != 0 {
+            let mut high_bit: u32 = 0x80;
             value = 0 as i8;
             loop {
                 bit = bit_ptr;
                 if bit as i32 == 0x80 {
                     lz_value = reader.read(line!())?;
                 }
-                if 0 != bit as u32 & lz_value {
+                if bit as u32 & lz_value != 0 {
                     value = (value as u32 | high_bit) as i8
                 }
                 high_bit >>= 1;
                 let next_bit_2: i8 = (bit as i32 >> 1) as i8;
                 bit_ptr = next_bit_2 as u8;
                 if 0 == next_bit_2 {
-                    bit_ptr = 0x80 as u8
+                    bit_ptr = 0x80
                 }
                 if !(0 != high_bit) {
                     break;
