@@ -43,7 +43,7 @@ where
         if bit as i32 == 0x80 {
             *lz_value = reader.read(line!())?;
         }
-        if 0 != bit as u32 & *lz_value {
+        if bit as u32 & *lz_value != 0 {
             back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
         }
         back_ref_bit >>= 1;
