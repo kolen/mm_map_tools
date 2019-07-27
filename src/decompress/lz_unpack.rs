@@ -47,9 +47,9 @@ where
             back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
         }
         back_ref_bit >>= 1;
-        let next_bit_3: i8 = (bit as i32 >> 1) as i8;
-        *bit_ptr = next_bit_3 as u8;
-        if 0 == next_bit_3 {
+        let next_bit: i8 = (bit as i32 >> 1) as i8;
+        *bit_ptr = next_bit as u8;
+        if 0 == next_bit {
             *bit_ptr = 0x80 as u8
         }
         if !(0 != back_ref_bit) {
