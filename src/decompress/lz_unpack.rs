@@ -26,9 +26,12 @@ impl<I: Iterator<Item = u8>> PackedDataReader<I> {
     }
 }
 
-
 // Checked: lz_value
-fn back_ref_off<I>(reader: &mut PackedDataReader<I>, bit_ptr: &mut u8, lz_value: &mut u32) -> Result<i32, PrematureEnd>
+fn back_ref_off<I>(
+    reader: &mut PackedDataReader<I>,
+    bit_ptr: &mut u8,
+    lz_value: &mut u32,
+) -> Result<i32, PrematureEnd>
 where
     I: Iterator<Item = u8>,
 {
