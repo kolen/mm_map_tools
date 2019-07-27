@@ -26,7 +26,9 @@ impl<I: Iterator<Item = u8>> PackedDataReader<I> {
     }
 }
 
-fn back_ref_off<I>(reader: &mut PackedDataReader<I>, bit: &mut u8, bit_ptr: &mut u8, lz_value: &mut u32) -> Result<i32, PrematureEnd>
+
+// Checked: lz_value
+fn back_ref_off<I>(reader: &mut PackedDataReader<I>, bit_ptr: &mut u8, lz_value: &mut u32) -> Result<i32, PrematureEnd>
 where
     I: Iterator<Item = u8>,
 {
@@ -34,15 +36,15 @@ where
     let mut back_ref_off: i32 = 0;
 
     loop {
-        *bit = *bit_ptr;
-        if *bit as i32 == 0x80 {
+        let bit = *bit_ptr;
+        if bit as i32 == 0x80 {
             *lz_value = reader.read(line!())?;
         }
-        if 0 != *bit as u32 & *lz_value {
+        if 0 != bit as u32 & *lz_value {
             back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
         }
         back_ref_bit >>= 1;
-        let next_bit_3: i8 = (*bit as i32 >> 1) as i8;
+        let next_bit_3: i8 = (bit as i32 >> 1) as i8;
         *bit_ptr = next_bit_3 as u8;
         if 0 == next_bit_3 {
             *bit_ptr = 0x80 as u8
@@ -111,7 +113,7 @@ pub fn lz_unpack(
             count_save = count;
             dict_index = dict_index as u16 as i32 + 1 & 0xfff
         } else {
-            let back_ref_off_ = back_ref_off(&mut reader, &mut bit, &mut bit_ptr, &mut lz_value)?;
+            let back_ref_off_ = back_ref_off(&mut reader, &mut bit_ptr, &mut lz_value)?;
             if back_ref_off_ == 0 {
                 return Ok(output);
             }
