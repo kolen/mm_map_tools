@@ -7,6 +7,8 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
+use std::fs::File;
+use std::io::Write;
 use std::result::Result;
 
 pub struct PrematureEnd {
@@ -30,6 +32,7 @@ fn back_ref_off<I>(
     reader: &mut PackedDataReader<I>,
     bit_ptr: &mut u8,
     lz_value: &mut u32,
+    log: &mut File,
 ) -> Result<i32, PrematureEnd>
 where
     I: Iterator<Item = u8>,
@@ -41,6 +44,7 @@ where
         let bit = *bit_ptr;
         if bit as i32 == 0x80 {
             *lz_value = reader.read(line!())?;
+            writeln!(log, "R @bro {:08b}", *lz_value as u8).unwrap();
         }
         if bit as u32 & *lz_value != 0 {
             back_ref_off = (back_ref_off as u32 | back_ref_bit) as i32
@@ -65,6 +69,7 @@ fn back_ref_len<I>(
     lz_value: &mut u32,
     count: &mut usize,
     count_save: &mut usize,
+    log: &mut File,
 ) -> Result<i32, PrematureEnd>
 where
     I: Iterator<Item = u8>,
@@ -75,6 +80,7 @@ where
         let bit = *bit_ptr;
         if bit == 0x80 {
             *lz_value = reader.read(line!())?;
+            writeln!(log, "R @brl {:08b}", *lz_value as u8).unwrap();
             *count = *count_save;
         }
         if bit as u32 & *lz_value != 0 {
@@ -99,6 +105,8 @@ pub fn lz_unpack(
 ) -> Result<Vec<u8>, PrematureEnd> {
     let mut output: Vec<u8> = Vec::with_capacity(unpacked_size);
 
+    let mut log = File::create("/tmp/log.txt").unwrap();
+
     let mut reader = PackedDataReader {
         iter: input.into_iter(),
     };
@@ -115,6 +123,7 @@ pub fn lz_unpack(
         let mut bit: u8 = bit_ptr;
         if bit as i32 == 0x80 {
             lz_value = reader.read(line!())?;
+            writeln!(log, "R @1 {:08b}", lz_value as u8).unwrap();
         }
         let value_bit: i32 = (lz_value & bit as u32) as i32;
         let next_bit: i8 = (bit as i32 >> 1) as i8;
@@ -129,6 +138,7 @@ pub fn lz_unpack(
                 bit = bit_ptr;
                 if bit as i32 == 0x80 {
                     lz_value = reader.read(line!())?;
+                    writeln!(log, "R @2 {:08b}", lz_value as u8).unwrap();
                 }
                 if bit as u32 & lz_value != 0 {
                     value = (value as u32 | high_bit) as i8
@@ -143,13 +153,15 @@ pub fn lz_unpack(
                     break;
                 }
             }
+            // Write single byte
             output.push(value as u8);
+            writeln!(log, "    W @1 {:08b}", value as u8).unwrap();
             count += 1;
             lz_dict[dict_index as usize] = value as u8;
             count_save = count;
             dict_index = dict_index as u16 as i32 + 1 & 0xfff
         } else {
-            let back_ref_off_ = back_ref_off(&mut reader, &mut bit_ptr, &mut lz_value)?;
+            let back_ref_off_ = back_ref_off(&mut reader, &mut bit_ptr, &mut lz_value, &mut log)?;
             if back_ref_off_ == 0 {
                 return Ok(output);
             }
@@ -160,16 +172,28 @@ pub fn lz_unpack(
                 &mut lz_value,
                 &mut count,
                 &mut count_save,
+                &mut log,
             )?;
+
+            writeln!(
+                log,
+                "    back_ref_off: {:x}; back_ref_len: {:x}",
+                back_ref_off_, back_ref_len_
+            )
+            .unwrap();
 
             let mut back_ref_i: i32 = 0;
             if back_ref_len_ + 1 >= 0 {
+                // Write lz_dict[back_ref_off..back_ref_off+back_ref_len_] (roughly)
+                let mut log_written: Vec<u8> = Vec::new();
                 loop {
                     let value_2 = lz_dict[(back_ref_off_ + back_ref_i & 0xfff) as usize];
+                    log_written.push(value_2);
                     output.push(value_2);
                     count += 1;
                     count_save = count;
                     if count == unpacked_size {
+                        writeln!(log, "    W @seq-end {:x?}", log_written).unwrap();
                         return Ok(output);
                     }
                     lz_dict[dict_index as usize] = value_2;
@@ -179,6 +203,7 @@ pub fn lz_unpack(
                         break;
                     }
                 }
+                writeln!(log, "    W @seq {:x?}", log_written).unwrap();
             }
         }
         if count == unpacked_size {
