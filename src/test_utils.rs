@@ -1,4 +1,4 @@
-use decompress::read_decompressed;
+use container::read_decompressed;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;

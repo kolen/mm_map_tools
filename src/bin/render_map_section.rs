@@ -1,5 +1,5 @@
 extern crate mm_map_tools;
-use mm_map_tools::decompress::read_decompressed;
+use mm_map_tools::container::read_decompressed;
 use mm_map_tools::map_section::MapSection;
 use mm_map_tools::render::{render_map_section, RenderOptions};
 use mm_map_tools::sprite_file::SpriteFile;

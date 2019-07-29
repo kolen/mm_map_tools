@@ -1,4 +1,4 @@
-use decompress::read_decompressed;
+use container::read_decompressed;
 use render::{render_map_section, MapSection, RenderOptions};
 use sprite_file::SpriteFile;
 use std::error;
