@@ -7,6 +7,8 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
+#![allow(clippy::cast_lossless)]
+
 use std::convert::TryInto;
 
 /// For prng_state return new prng_state and next table entry. Used
