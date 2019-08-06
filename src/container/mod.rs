@@ -84,7 +84,7 @@ impl error::Error for DecompressError {}
 
 impl From<std::io::Error> for DecompressError {
     fn from(error: std::io::Error) -> Self {
-        DecompressError::FileError { error: error }
+        DecompressError::FileError { error }
     }
 }
 

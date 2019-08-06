@@ -1,6 +1,6 @@
 use image;
 use map_section::MapSection;
-use nalgebra::{Matrix, Matrix2x3, ArrayStorage, Vector2, Vector3, U1, U3};
+use nalgebra::{ArrayStorage, Matrix, Matrix2x3, Vector2, Vector3, U1, U3};
 use sprite_file::SpriteFile;
 use std::cmp;
 
@@ -41,10 +41,7 @@ impl CanvasSize {
             map_section.size_y as i32 * TILE_HALF_W,
             map_section.size_z as i32 * TILE_Z_OFFSET,
         );
-        CanvasSize {
-            size: size,
-            center: center,
-        }
+        CanvasSize { size, center }
     }
 }
 
@@ -163,7 +160,8 @@ mod tests {
     fn test_render_map_section() {
         let map_section = MapSection::from_contents(test_file_compressed_contents(
             "Realms/Celtic/Forest/CFSec10.map",
-        )).unwrap();
+        ))
+        .unwrap();
         let sprites = SpriteFile::parse(
             File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap(),
         );

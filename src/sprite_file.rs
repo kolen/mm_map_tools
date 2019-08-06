@@ -71,7 +71,7 @@ impl SpriteFile {
 
         SpriteFile {
             pallettes: header.pallettes,
-            frames: frames,
+            frames,
         }
     }
 }
@@ -129,7 +129,7 @@ fn pixels(
             pixels: &input[offsets.pixels_offset as usize..],
             is_skip: false,
             pixels_left: 0,
-            pallette: pallette,
+            pallette,
         }
         .chain(iter::repeat(Rgba([0, 0, 0, 0])))
         .take(width as usize);
@@ -158,13 +158,7 @@ fn frame(pallettes: &Vec<Pallette>) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> +
             }),
             height as usize,
         )(input)?;
-        let image = pixels(
-            i,
-            rows,
-            width,
-            height,
-            &pallettes[pallette_index as usize],
-        );
+        let image = pixels(i, rows, width, height, &pallettes[pallette_index as usize]);
 
         Ok((
             input,

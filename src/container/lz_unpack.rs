@@ -7,6 +7,8 @@
 // Author: Nikita Sadkov
 // License: GPL2
 
+#![allow(clippy::all)]
+
 use std::result::Result;
 
 pub struct PrematureEnd {

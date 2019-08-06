@@ -161,9 +161,7 @@ fn update_map_display(
     thread::spawn(move || {
         // Errors itself don't implement Send, so we'll send strings
         let time = Instant::now();
-        let render_options = RenderOptions {
-            max_layer: max_layer,
-        };
+        let render_options = RenderOptions { max_layer };
         let map_image = renderer
             .render(&map_group_1, &map_section_1, &render_options)
             .map_err(|e| format!("Error loading map section:\n{}", e));
@@ -228,7 +226,7 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
                     renderer.clone(),
                     &current_group.borrow().clone(),
                     &current_section.borrow().clone(),
-                    current_max_layer.borrow().clone(),
+                    *current_max_layer.borrow(),
                 );
             }
         }),

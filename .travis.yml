@@ -1,3 +1,8 @@
 language: rust
+before_script:
+  - rustup component add clippy
 before_install:
   - sudo apt-get install -y libpango1.0-dev libatk1.0-dev libgtk-3-dev
+script:
+  - cargo clippy
+  - cargo test

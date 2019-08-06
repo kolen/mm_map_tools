@@ -65,7 +65,7 @@ impl PRNG {
             bit >>= 1;
             mask >>= 1;
         }
-        PRNG { table: table }
+        PRNG { table }
     }
 
     pub fn next(self: &mut Self) -> u32 {
