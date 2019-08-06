@@ -63,8 +63,8 @@ fn project(tile_coordinates: TileCoordinates) -> Vector2<i32> {
     projection * tile_coordinates
 }
 
-fn map_rendering_order<'a>(
-    map_section: &'a MapSection,
+fn map_rendering_order(
+    map_section: &MapSection,
     max_z: u32,
 ) -> impl Iterator<Item = TileCoordinates> {
     let (sx, sy, sz) = (
