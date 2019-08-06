@@ -60,12 +60,10 @@ impl SpriteFile {
         let frames = header
             .frame_offsets
             .iter()
-            .filter_map(|&offset| {
-                Some(
-                    frame(&header.pallettes)(&payload[offset as usize..])
-                        .expect(&format!("Can't decode frame at {}", offset))
-                        .1,
-                )
+            .map(|&offset| {
+                frame(&header.pallettes)(&payload[offset as usize..])
+                    .expect(&format!("Can't decode frame at {}", offset))
+                    .1
             })
             .collect();
 
