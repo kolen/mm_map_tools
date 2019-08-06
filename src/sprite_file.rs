@@ -62,7 +62,7 @@ impl SpriteFile {
             .iter()
             .map(|&offset| {
                 frame(&header.pallettes)(&payload[offset as usize..])
-                    .expect(&format!("Can't decode frame at {}", offset))
+                    .unwrap_or_else(|_| panic!("Can't decode frame at {}", offset))
                     .1
             })
             .collect();
