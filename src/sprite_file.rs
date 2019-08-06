@@ -79,7 +79,7 @@ struct IterPixelRow<'a> {
     pixels: &'a [u8],
     is_skip: bool,
     pixels_left: u8,
-    pallette: &'a Pallette,
+    pallette: &'a [Rgb8],
 }
 
 impl<'a> Iterator for IterPixelRow<'a> {
@@ -111,7 +111,7 @@ fn pixels(
     lines: impl IntoIterator<Item = LineOffsets>,
     width: u32,
     height: u32,
-    pallette: &Pallette,
+    pallette: &[Rgb8],
 ) -> RgbaImage {
     let mut image = ImageBuffer::new(width, height);
 
@@ -140,7 +140,7 @@ fn pixels(
     image
 }
 
-fn frame(pallettes: &Vec<Pallette>) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_ {
+fn frame(pallettes: &[Pallette]) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_ {
     move |i: &[u8]| {
         let (input, (_size, width, height, center_x, center_y)) =
             tuple((le_u32, le_u32, le_u32, le_i32, le_i32))(i)?;
