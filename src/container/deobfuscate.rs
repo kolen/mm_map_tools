@@ -12,7 +12,7 @@ use std::convert::TryInto;
 /// For prng_state return new prng_state and next table entry. Used
 /// only for initializing PRNG table.
 fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
-    let mut t = 0x41c64e6du64.wrapping_mul(prng_state as u64) as i64;
+    let mut t = 0x41c6_4e6du64.wrapping_mul(prng_state as u64) as i64;
 
     let mut t_hi: u32 = (t >> 32) as u32;
     t_hi = t_hi.wrapping_shl(16);
@@ -20,7 +20,7 @@ fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
     let t_lo: u32 = t as u32;
 
     t = (((t_hi as u64) << 32) | (t_lo as u64)) as i64;
-    t = (t as u64).wrapping_add(0xffff00003039) as i64 as i64;
+    t = (t as u64).wrapping_add(0xffff_0000_3039) as i64 as i64;
 
     let new_prng_state = t as u32;
     let table_entry: u32 = (((t >> 32) as u32) & 0xffff_0000u32) | ((t as u32) >> 16);
@@ -56,8 +56,8 @@ impl PRNG {
             }
         }
 
-        let mut mask: u32 = 0xffffffff;
-        let mut bit: u32 = 0x80000000;
+        let mut mask: u32 = 0xffff_ffff;
+        let mut bit: u32 = 0x8000_0000;
         let mut i = 5;
         while bit != 0 {
             table[i] = bit | table[i] & mask;
