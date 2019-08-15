@@ -2,6 +2,7 @@
 name = "mm_map_tools"
 version = "0.1.0"
 authors = ["kolen <incredible.angst@gmail.com>"]
+default-run = "viewer"
 
 [lib]
 name = "mm_map_tools"
