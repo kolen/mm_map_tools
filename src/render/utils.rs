@@ -20,15 +20,15 @@ pub struct Renderer {
 }
 
 pub fn load_sprites_and_map_section_cached<
-    L1: Fn(&Path) -> Result<MapSection, Box<error::Error>>,
-    L2: Fn(&Path) -> Result<SpriteFile, Box<error::Error>>,
+    L1: Fn(&Path) -> Result<MapSection, Box<dyn error::Error>>,
+    L2: Fn(&Path) -> Result<SpriteFile, Box<dyn error::Error>>,
 >(
     cache: Option<RendererCache>,
     section_path: &Path,
     sprites_path: &Path,
     load_section: L1,
     load_sprites: L2,
-) -> Result<RendererCache, Box<error::Error>> {
+) -> Result<RendererCache, Box<dyn error::Error>> {
     match cache {
         None => Ok(RendererCache {
             section_path: section_path.to_path_buf(),
@@ -78,7 +78,7 @@ impl Renderer {
         map_group: &str,
         map_section: &str,
         options: &RenderOptions,
-    ) -> Result<image::RgbaImage, Box<error::Error>> {
+    ) -> Result<image::RgbaImage, Box<dyn error::Error>> {
         let map_section_path_1 = self.section_path(&map_group, &map_section);
         let sprites_path = map_section_path_1
             .parent()
