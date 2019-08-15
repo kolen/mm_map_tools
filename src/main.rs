@@ -2,6 +2,4 @@
 //extern crate find_folder;
 //extern crate piston_window;
 
-fn main() {
-
-}
+fn main() {}

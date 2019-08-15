@@ -86,7 +86,7 @@ impl Renderer {
             .join(Path::new("Terrain.spr"));
 
         let mut cache_writer = self.cache.write().unwrap(); // FIXME: unwrap
-        // unwrap will fail if previous write was poisoned
+                                                            // unwrap will fail if previous write was poisoned
         let old_cache_contents = mem::replace(&mut *cache_writer, None);
         let new_cache_contents = load_sprites_and_map_section_cached(
             old_cache_contents,
