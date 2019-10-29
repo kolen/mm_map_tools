@@ -10,7 +10,7 @@ name = "mm_map_tools"
 [dependencies]
 nom = "5.0.1"
 image = "0.22.3"
-nalgebra = "0.18"
+nalgebra = "0.19"
 gdk-pixbuf = "*"
 glib = "*"
 
