@@ -3,6 +3,7 @@ name = "mm_map_tools"
 version = "0.1.0"
 authors = ["kolen <incredible.angst@gmail.com>"]
 default-run = "viewer"
+edition = "2018"
 
 [lib]
 name = "mm_map_tools"

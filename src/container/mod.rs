@@ -167,7 +167,7 @@ pub fn read_decompressed<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, DecompressE
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_utils::*;
+    use crate::test_utils::*;
     #[test]
     #[ignore]
     fn test_decompress() {

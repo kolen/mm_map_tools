@@ -1,7 +1,7 @@
 use image;
-use map_section::MapSection;
+use crate::map_section::MapSection;
 use nalgebra::{ArrayStorage, Matrix, Matrix2x3, Vector2, Vector3, U1, U3};
-use sprite_file::SpriteFile;
+use crate::sprite_file::SpriteFile;
 use std::cmp;
 
 pub mod utils;
@@ -150,10 +150,10 @@ pub fn render_map_section(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use map_section::MapSection;
-    use sprite_file::SpriteFile;
+    use crate::map_section::MapSection;
+    use crate::sprite_file::SpriteFile;
     use std::fs::File;
-    use test_utils::*;
+    use crate::test_utils::*;
 
     #[test]
     #[ignore]

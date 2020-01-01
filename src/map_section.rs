@@ -76,7 +76,7 @@ impl MapSection {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_utils;
+    use crate::test_utils;
     #[test]
     #[ignore]
     fn test_from_contents() {
