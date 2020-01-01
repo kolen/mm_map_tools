@@ -17,3 +17,6 @@ glib = "*"
 [dependencies.gtk]
 version = "0.5.0"
 features = ["v3_10"]
+
+[profile.dev]
+opt-level = 1
