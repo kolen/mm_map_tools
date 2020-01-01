@@ -120,7 +120,7 @@ fn checksum(data: &[u8]) -> u32 {
     sum
 }
 
-fn deobfuscate(input: &mut [u8]) -> Result<(Vec<u8>), DecompressError> {
+fn deobfuscate(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     let deobfuscated = decrypt(input);
     let header = Header::from_bytes(&deobfuscated)?;
     if header.checksum_deobfuscated == checksum(&deobfuscated[HEADER_SIZE..]) {
