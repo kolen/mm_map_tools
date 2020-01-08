@@ -11,6 +11,10 @@ Not a serious project for now. What can it do:
 
 Most format descriptions are from [sau](https://github.com/saniv/sau/) project, including decompression/deobfuscation code.
 
+## `viewer`
+
+It's a GUI map section viewer. It is default binary that runs when invoking `cargo run`.
+
 ## `render_map_section` binary
 
 Renders map section to image file.
