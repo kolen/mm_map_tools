@@ -42,7 +42,8 @@ fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
     let width = image.width() as i32;
     let height = image.height() as i32;
     let raw = image.into_raw();
-    Pixbuf::new_from_vec(raw, Colorspace::Rgb, true, 8, width, height, width * 4)
+    let bytes = glib::Bytes::from_owned(raw);
+    Pixbuf::new_from_bytes(&bytes, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
 fn debounced(timeout: u32, action: impl Fn() + 'static) -> impl Fn() + 'static {
@@ -59,7 +60,7 @@ fn debounced(timeout: u32, action: impl Fn() + 'static) -> impl Fn() + 'static {
             if *last_invokation_id_2.borrow() == current_invokation {
                 action_rc_1();
             }
-            gtk::Continue(false)
+            glib::Continue(false)
         });
     }
 }
@@ -182,13 +183,14 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     map_group_selector_init(&map_group_selector);
     // FIXME: unwrap, should handle failure for initial load
     let map_group_store = create_map_group_list(&mm_path).expect("Map group list failed");
-    map_group_selector.set_model(&map_group_store);
+    map_group_selector.set_model(Some(&map_group_store));
 
     let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
     map_section_selector_init(&map_section_selector);
-    let section_store = create_map_section_list(&mm_path, "Celtic/Forest");
+    let section_store =
+        create_map_section_list(&mm_path, "Celtic/Forest").expect("Can't read section directory");
     // FIXME: unwrap, should handle failure for initial load
-    map_section_selector.set_model(&section_store.expect("Can't read section directory"));
+    map_section_selector.set_model(Some(&section_store));
 
     let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
 
@@ -202,10 +204,10 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
     map_group_selector.connect_changed(
         clone!(current_group, map_section_selector => move |map_group_selector| {
             let iter = map_group_selector.get_active_iter().unwrap();
-            let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
+            let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap().unwrap();
             let section_store = create_map_section_list(&mm_path_buf, &group_segment);
             // FIXME: unwrap, should handle failure with error message
-            map_section_selector.set_model(&section_store.expect("Can't read section directory"));
+            map_section_selector.set_model(Some(&section_store.expect("Can't read section directory")));
             current_group.replace(group_segment.to_string());
         }),
     );
@@ -216,8 +218,9 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
         clone!(window, image, map_rendering_spinner, renderer, current_group, current_section, current_max_layer => move |map_section_selector| {
             let selection = map_section_selector.get_selection();
             if let Some((model, iter)) = selection.get_selected() {
-                let section_segment = model.get_value(&iter, 0).get::<String>().unwrap();
-                current_section.replace(section_segment.to_string());
+                let section_segment_value = model.get_value(&iter, 0);
+                let section_segment = section_segment_value.get::<String>().expect("Can't get section segment").expect("Expected string, got None");
+                current_section.replace(section_segment);
 
                 update_map_display(
                     window.clone(),
