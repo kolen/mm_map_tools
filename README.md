@@ -1,5 +1,7 @@
 # mm_map_tools
 
+![screenshot](doc/screenshot.jpg)
+
 Collection of things to read [Magic & Mayhem](https://en.wikipedia.org/wiki/Magic_and_Mayhem) file formats.
 
 Not a serious project for now. What can it do:
