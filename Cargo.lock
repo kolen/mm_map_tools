@@ -361,7 +361,7 @@ dependencies = [
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -558,7 +558,7 @@ name = "num_cpus"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "hermit-abi 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hermit-abi 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -834,7 +834,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum gobject-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "08475e4a08f27e6e2287005950114735ed61cec2cb8c1187682a5aec8c69b715"
 "checksum gtk 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "56a6b30f194f09a17bb7ffa95c3ecdb405abd3b75ff981f831b1f6d18fe115ff"
 "checksum gtk-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d487d333a4b87072e6bf9f2e55befa0ebef01b9496c2e263c0f4a1ff3d6c04b1"
-"checksum hermit-abi 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "f629dc602392d3ec14bfc8a09b5e644d7ffd725102b48b81e59f90f2633621d7"
+"checksum hermit-abi 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "eff2656d88f158ce120947499e971d743c05dbcbed62e5bd2f38f1698bbc3772"
 "checksum image 0.22.3 (registry+https://github.com/rust-lang/crates.io-index)" = "7b4be8aaefbe7545dc42ae925afb55a0098f226a3fe5ef721872806f44f57826"
 "checksum inflate 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "1cdb29978cc5797bd8dcc8e5bf7de604891df2a8dc576973d71a281e916db2ff"
 "checksum jpeg-decoder 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "0256f0aec7352539102a9efbcb75543227b7ab1117e0f95450023af730128451"
