@@ -190,12 +190,12 @@ name = "futures-channel"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures-core 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "futures-core"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -203,7 +203,7 @@ name = "futures-executor"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures-core 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-task 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -234,7 +234,7 @@ name = "futures-util"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures-core 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-macro 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-task 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pin-utils 0.1.0-alpha.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -337,7 +337,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-channel 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures-core 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-io 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio-sys 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -366,7 +366,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-channel 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures-core 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-executor 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-task 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -939,7 +939,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum deflate 0.7.20 (registry+https://github.com/rust-lang/crates.io-index)" = "707b6a7b384888a70c8d2e8650b3e60170dfc6a67bb4aa67b6dfca57af4bedb4"
 "checksum either 1.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 "checksum futures-channel 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "fcae98ca17d102fd8a3603727b9259fcf7fa4239b603d2142926189bc8999b86"
-"checksum futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "79564c427afefab1dfb3298535b21eda083ef7935b4f0ecbfcb121f0aec10866"
+"checksum futures-core 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ccfb301b0b09e940a67376cf40d1b0ac4db9366ee737f65c02edea225057e91e"
 "checksum futures-executor 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1e274736563f686a837a0568b478bdabfeaec2dca794b5649b04e2fe1627c231"
 "checksum futures-io 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e676577d229e70952ab25f3945795ba5b16d63ca794ca9d2c860e5595d20b5ff"
 "checksum futures-macro 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "52e7c56c15537adb4f76d0b7a76ad131cb4d2f4f32d3b0bcabcbe1c7c5e87764"
