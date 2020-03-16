@@ -49,15 +49,14 @@ fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
 fn debounced(timeout: u32, action: impl Fn() + 'static) -> impl Fn() + 'static {
     let action_rc = Rc::new(action);
     let last_invokation_id: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
-    let last_invokation_id_1 = last_invokation_id.clone();
     move || {
-        *last_invokation_id_1.borrow_mut() += 1;
-        let current_invokation: u32 = *last_invokation_id_1.borrow();
+        *last_invokation_id.borrow_mut() += 1;
+        let current_invokation: u32 = *last_invokation_id.borrow();
 
         let action_rc_1 = action_rc.clone();
-        let last_invokation_id_2 = last_invokation_id_1.clone();
+        let last_invokation_id_1 = last_invokation_id.clone();
         gtk::timeout_add(timeout, move || {
-            if *last_invokation_id_2.borrow() == current_invokation {
+            if *last_invokation_id_1.borrow() == current_invokation {
                 action_rc_1();
             }
             glib::Continue(false)
@@ -208,7 +207,7 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
             let section_store = create_map_section_list(&mm_path_buf, &group_segment);
             // FIXME: unwrap, should handle failure with error message
             map_section_selector.set_model(Some(&section_store.expect("Can't read section directory")));
-            current_group.replace(group_segment.to_string());
+            current_group.replace(group_segment);
         }),
     );
 
@@ -237,12 +236,6 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
 
     let update_map_display_on_max_level = debounced(500, {
         let window = window.clone();
-        let image = image.clone();
-        let map_rendering_spinner = map_rendering_spinner.clone();
-        let renderer = renderer.clone();
-        let current_group = current_group.clone();
-        let current_section = current_section.clone();
-        let current_max_layer = current_max_layer.clone();
         let max_layer_adjustment = max_layer_adjustment.clone();
 
         move || {
