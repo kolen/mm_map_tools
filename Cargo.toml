@@ -15,7 +15,7 @@ nalgebra = "0.19"
 glib = "*"
 
 [dependencies.gtk]
-version = "0.8.0"
+version = "0.8.1"
 features = ["v3_16"]
 
 [dependencies.gio]
