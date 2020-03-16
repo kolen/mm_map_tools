@@ -28,3 +28,5 @@ features = ["v2_32"]
 
 [profile.dev]
 opt-level = 1
+package.image = { opt-level = 3 }
+package.nalgebra = { opt-level = 2 }
