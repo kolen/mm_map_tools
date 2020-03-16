@@ -287,7 +287,7 @@ fn main() {
         .ok()
         .map(|path_s| Path::new(&path_s).to_path_buf())
         .or_else(|| {
-            if dir_chooser.run() == ResponseType::Accept.into() {
+            if dir_chooser.run() == ResponseType::Accept {
                 Some(
                     dir_chooser
                         .get_filename()
