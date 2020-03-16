@@ -158,7 +158,7 @@ fn update_map_display(
     });
 
     let (map_group_1, map_section_1) = (map_group.to_owned(), map_section.to_owned());
-    thread::spawn(move || {
+    thread::Builder::new().name("map render".into()).spawn(move || {
         // Errors itself don't implement Send, so we'll send strings
         let time = Instant::now();
         let render_options = RenderOptions { max_layer };
@@ -167,7 +167,7 @@ fn update_map_display(
             .map_err(|e| format!("Error loading map section:\n{}", e));
         eprintln!("Rendering took {:?}", time.elapsed());
         images_channel_tx.send(map_image).unwrap();
-    });
+    }).expect("Can't create map rendering thread");
 }
 
 fn create_main_window(mm_path: &Path) -> ApplicationWindow {
