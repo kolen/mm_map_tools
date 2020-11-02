@@ -27,7 +27,7 @@ const TILES_OFFSET: usize = 0x4c;
 impl MapSection {
     pub fn from_contents(contents: Vec<u8>) -> Result<Self, String> {
         let result: IResult<_, _, VerboseError<_>> =
-            tuple((verify(le_u32, |v| *v == 6), le_u32, le_u32, le_u32))(&contents);
+            tuple((verify(le_u32, |v| *v == 6), le_u32, le_u32, le_u32))(&*contents);
         let (_, (_, size_x, size_y, size_z)) =
             result.map_err(|e| format!("mps parse error: {:?}", e))?;
 
