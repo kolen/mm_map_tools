@@ -13,6 +13,7 @@ image = "0.23.1"
 nalgebra = "0.19"
 glib = "0.9.1"
 mm_file_formats.path = "mm_file_formats"
+mm_compression.path = "mm_compression"
 
 [dependencies.gtk]
 version = "0.8.1"
@@ -33,5 +34,6 @@ package.nalgebra = { opt-level = 2 }
 
 [workspace]
 members = [
-  "mm_file_formats"
+  "mm_file_formats",
+  "mm_compression",
 ]

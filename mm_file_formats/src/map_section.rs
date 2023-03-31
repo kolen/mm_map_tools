@@ -76,7 +76,7 @@ impl MapSection {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils;
+    use mm_compression::test_utils;
     #[test]
     #[ignore]
     fn test_from_contents() {

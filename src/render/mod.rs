@@ -150,7 +150,7 @@ pub fn render_map_section(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::*;
+    use mm_compression::test_utils::*;
     use mm_file_formats::map_section::MapSection;
     use mm_file_formats::sprites::Sprites;
     use std::fs::File;

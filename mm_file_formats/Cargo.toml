@@ -7,3 +7,4 @@ description = "Parsers for Magic & Mayhem file formats"
 [dependencies]
 nom = "7.1.3"
 image = "0.23.1"
+mm_compression.path = "../mm_compression"

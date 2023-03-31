@@ -1,7 +1,7 @@
 extern crate mm_map_tools;
+use mm_compression::read_decompressed;
 use mm_file_formats::map_section::MapSection;
 use mm_file_formats::sprites::Sprites;
-use mm_map_tools::container::read_decompressed;
 use mm_map_tools::render::{render_map_section, RenderOptions};
 use std::env;
 use std::fs::File;

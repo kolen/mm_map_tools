@@ -1,5 +1,7 @@
 mod deobfuscate;
 mod lz_unpack;
+pub mod test_utils;
+
 use self::deobfuscate::decrypt;
 use self::lz_unpack::{lz_unpack, PrematureEnd};
 use std::convert::TryInto;

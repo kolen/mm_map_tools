@@ -591,10 +591,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mm_compression"
+version = "0.1.0"
+
+[[package]]
 name = "mm_file_formats"
 version = "0.1.0"
 dependencies = [
  "image",
+ "mm_compression",
  "nom",
 ]
 
@@ -607,6 +612,7 @@ dependencies = [
  "glib",
  "gtk",
  "image",
+ "mm_compression",
  "mm_file_formats",
  "nalgebra",
 ]

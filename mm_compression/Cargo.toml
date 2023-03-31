@@ -1,0 +1,7 @@
+[package]
+name = "mm_compression"
+version = "0.1.0"
+edition = "2021"
+description = "Utilities for handling file compression and obfuscation from Magic & Mayhem"
+
+[dependencies]

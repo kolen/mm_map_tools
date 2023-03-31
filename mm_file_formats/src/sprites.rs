@@ -199,7 +199,7 @@ fn header(input: &[u8]) -> IResult<&[u8], SpriteFileHeader> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::*;
+    use mm_compression::test_utils::*;
 
     #[test]
     #[ignore]
