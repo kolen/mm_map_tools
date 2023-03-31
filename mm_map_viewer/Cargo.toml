@@ -12,4 +12,4 @@ gdk-pixbuf = { version = "0.8.0", features = ["v2_32"] }
 image = "0.23.1"
 mm_compression = { path = "../mm_compression" }
 mm_file_formats = { path = "../mm_file_formats" }
-mm_map_tools = { path = ".." }
+mm_map_rendering = { path = "../mm_map_rendering" }

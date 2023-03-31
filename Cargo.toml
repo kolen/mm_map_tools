@@ -4,15 +4,6 @@ version = "0.1.0"
 authors = ["kolen <incredible.angst@gmail.com>"]
 edition = "2018"
 
-[lib]
-name = "mm_map_tools"
-
-[dependencies]
-image = "0.23.1"
-nalgebra = "0.19"
-mm_file_formats.path = "mm_file_formats"
-mm_compression.path = "mm_compression"
-
 [profile.dev]
 opt-level = 1
 package.image = { opt-level = 3 }
@@ -22,5 +13,6 @@ package.nalgebra = { opt-level = 2 }
 members = [
   "mm_file_formats",
   "mm_compression",
+  "mm_map_rendering",
   "mm_map_viewer",
 ]

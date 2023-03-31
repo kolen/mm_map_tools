@@ -10,12 +10,11 @@ checksum = "5d2e7343e7fc9de883d1b0341e0b13970f764c14101234857d2ddafa1cb1cac2"
 
 [[package]]
 name = "alga"
-version = "0.9.2"
+version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "658f9468113d34781f6ca9d014d174c74b73de870f1e0e3ad32079bbab253b19"
+checksum = "4f823d037a7ec6ea2197046bafd4ae150e6bc36f9ca347404f46a46823fa84f2"
 dependencies = [
  "approx",
- "libm",
  "num-complex",
  "num-traits",
 ]
@@ -86,15 +85,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7c3dd8985a7111efc5c80b44e23ecdd8c007de8ade3b96595387e812b957cf5"
 
 [[package]]
-name = "c2-chacha"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "214238caa1bf3a496ec3392968969cab8549f96ff30652c9e56885329315f6bb"
-dependencies = [
- "ppv-lite86",
-]
-
-[[package]]
 name = "cairo-rs"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -132,6 +122,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
+name = "cfg-if"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
 name = "color_quant"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -143,7 +139,7 @@ version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
 dependencies = [
- "cfg-if",
+ "cfg-if 0.1.10",
 ]
 
 [[package]]
@@ -163,7 +159,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5064ebdbf05ce3cb95e45c8b086f72263f4166b29b97f6baff7ef7fe047b55ac"
 dependencies = [
  "autocfg 0.1.7",
- "cfg-if",
+ "cfg-if 0.1.10",
  "crossbeam-utils",
  "lazy_static",
  "memoffset",
@@ -176,7 +172,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c695eeca1e7173472a32221542ae469b3e9aac3a4fc81f7696bcad82029493db"
 dependencies = [
- "cfg-if",
+ "cfg-if 0.1.10",
  "crossbeam-utils",
 ]
 
@@ -187,7 +183,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce446db02cdc3165b94ae73111e570793400d0794e46125cc4056c81cbb039f4"
 dependencies = [
  "autocfg 0.1.7",
- "cfg-if",
+ "cfg-if 0.1.10",
  "lazy_static",
 ]
 
@@ -336,20 +332,20 @@ dependencies = [
 
 [[package]]
 name = "generic-array"
-version = "0.13.2"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ed1e761351b56f54eb9dcd0cfaca9fd0daecf93918e1cfc01c8a3d26ee7adcd"
+checksum = "f797e67af32588215eaaab8327027ee8e71b9dd0b2b26996aedf20c030fce309"
 dependencies = [
  "typenum",
 ]
 
 [[package]]
 name = "getrandom"
-version = "0.1.14"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"
+checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
 dependencies = [
- "cfg-if",
+ "cfg-if 1.0.0",
  "libc",
  "wasi",
 ]
@@ -539,9 +535,9 @@ checksum = "d515b1f41455adea1313a4a2ac8a8a477634fbae63cc6100e3aebb207ce61558"
 
 [[package]]
 name = "libm"
-version = "0.1.4"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fc7aa29613bd6a620df431842069224d8bc9011086b1db4c0e0cd47fa03ec9a"
+checksum = "348108ab3fba42ec82ff6e9564fc4ca0247bdccdc68dd8af9764bbc79c3c8ffb"
 
 [[package]]
 name = "lzw"
@@ -551,9 +547,9 @@ checksum = "7d947cbb889ed21c2a84be6ffbaebf5b4e0f4340638cba0444907e38b56be084"
 
 [[package]]
 name = "matrixmultiply"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4f7ec66360130972f34830bfad9ef05c6610a43938a467bcc9ab9369ab3478f"
+checksum = "916806ba0031cd542105d916a97c8572e1fa6dd79c9c51e7eb43a09ec2dd84c1"
 dependencies = [
  "rawpointer",
 ]
@@ -602,7 +598,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mm_map_tools"
+name = "mm_map_rendering"
 version = "0.1.0"
 dependencies = [
  "image",
@@ -610,6 +606,10 @@ dependencies = [
  "mm_file_formats",
  "nalgebra",
 ]
+
+[[package]]
+name = "mm_map_tools"
+version = "0.1.0"
 
 [[package]]
 name = "mm_map_viewer"
@@ -622,7 +622,7 @@ dependencies = [
  "image",
  "mm_compression",
  "mm_file_formats",
- "mm_map_tools",
+ "mm_map_rendering",
 ]
 
 [[package]]
@@ -702,6 +702,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c62be47e61d1842b9170f0fdeec8eba98e60e90e5446449a0545e5152acd7096"
 dependencies = [
  "autocfg 1.0.0",
+ "libm",
 ]
 
 [[package]]
@@ -773,9 +774,9 @@ dependencies = [
 
 [[package]]
 name = "ppv-lite86"
-version = "0.2.6"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74490b50b9fbe561ac330df47c08f3f33073d2d00c150f719147d7c54522fa1b"
+checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
@@ -810,11 +811,11 @@ dependencies = [
 
 [[package]]
 name = "rand_chacha"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03a2a90da8c7523f554344f921aa97283eadf6ac484a6d2a7d0212fa7f8d6853"
+checksum = "f4c8ed856279c9737206bf725bf36935d8666ead7aa69b52be55af369d193402"
 dependencies = [
- "c2-chacha",
+ "ppv-lite86",
  "rand_core",
 ]
 
@@ -944,9 +945,9 @@ dependencies = [
 
 [[package]]
 name = "typenum"
-version = "1.11.2"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d2783fe2d6b8c1101136184eb41be8b1ad379e4657050b8aaff0c79ee7575f9"
+checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
 
 [[package]]
 name = "unicode-ident"

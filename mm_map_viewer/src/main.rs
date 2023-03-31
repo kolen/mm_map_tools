@@ -2,15 +2,13 @@ extern crate gdk_pixbuf;
 extern crate glib;
 extern crate gtk;
 extern crate image;
-extern crate mm_map_tools;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gtk::prelude::*;
 use gtk::{
     ApplicationWindow, Builder, CellRendererText, ComboBox, FileChooserAction, FileChooserDialog,
     Image, ListStore, ResponseType, Spinner, TreeView, Window,
 };
-use mm_map_tools::render::utils::Renderer;
-use mm_map_tools::render::RenderOptions;
+use mm_map_rendering::{utils::Renderer, RenderOptions};
 use std::cell::RefCell;
 use std::env;
 use std::ffi::OsStr;
