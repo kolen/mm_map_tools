@@ -1,7 +1,3 @@
-extern crate gdk_pixbuf;
-extern crate glib;
-extern crate gtk;
-extern crate image;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gtk::prelude::*;
 use gtk::{
