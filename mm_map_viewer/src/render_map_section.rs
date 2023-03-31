@@ -1,4 +1,3 @@
-extern crate mm_map_tools;
 use mm_compression::read_decompressed;
 use mm_file_formats::map_section::MapSection;
 use mm_file_formats::sprites::Sprites;

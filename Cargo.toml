@@ -2,7 +2,6 @@
 name = "mm_map_tools"
 version = "0.1.0"
 authors = ["kolen <incredible.angst@gmail.com>"]
-default-run = "viewer"
 edition = "2018"
 
 [lib]
@@ -11,21 +10,8 @@ name = "mm_map_tools"
 [dependencies]
 image = "0.23.1"
 nalgebra = "0.19"
-glib = "0.9.1"
 mm_file_formats.path = "mm_file_formats"
 mm_compression.path = "mm_compression"
-
-[dependencies.gtk]
-version = "0.8.1"
-features = ["v3_16"]
-
-[dependencies.gio]
-version = "0.8.0"
-features = ["v2_44"]
-
-[dependencies.gdk-pixbuf]
-version = "0.8.0"
-features = ["v2_32"]
 
 [profile.dev]
 opt-level = 1
@@ -36,4 +22,5 @@ package.nalgebra = { opt-level = 2 }
 members = [
   "mm_file_formats",
   "mm_compression",
+  "mm_map_viewer",
 ]
