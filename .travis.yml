@@ -1,6 +1,6 @@
 language: rust
 rust:
-  - 1.47.0
+  - 1.68.2
 cache: cargo
 before_script:
   - rustup component add clippy

@@ -12,18 +12,18 @@ name = "mm_map_tools"
 nom = "6.0.0"
 image = "0.23.1"
 nalgebra = "0.19"
-glib = "*"
+glib = "0.9.1"
 
 [dependencies.gtk]
 version = "0.8.1"
 features = ["v3_16"]
 
 [dependencies.gio]
-version = ""
+version = "0.8.0"
 features = ["v2_44"]
 
 [dependencies.gdk-pixbuf]
-version = ""
+version = "0.8.0"
 features = ["v2_32"]
 
 [profile.dev]
