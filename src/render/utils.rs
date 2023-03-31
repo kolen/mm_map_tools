@@ -1,6 +1,6 @@
 use crate::container::read_decompressed;
 use crate::render::{render_map_section, MapSection, RenderOptions};
-use crate::sprite_file::SpriteFile;
+use mm_file_formats::sprite_file::SpriteFile;
 use std::error;
 use std::fs::File;
 use std::mem;

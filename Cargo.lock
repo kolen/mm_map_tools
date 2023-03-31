@@ -591,6 +591,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mm_file_formats"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "nom",
+]
+
+[[package]]
 name = "mm_map_tools"
 version = "0.1.0"
 dependencies = [
@@ -599,8 +607,8 @@ dependencies = [
  "glib",
  "gtk",
  "image",
+ "mm_file_formats",
  "nalgebra",
- "nom",
 ]
 
 [[package]]

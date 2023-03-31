@@ -9,10 +9,10 @@ edition = "2018"
 name = "mm_map_tools"
 
 [dependencies]
-nom = "7.1.3"
 image = "0.23.1"
 nalgebra = "0.19"
 glib = "0.9.1"
+mm_file_formats.path = "mm_file_formats"
 
 [dependencies.gtk]
 version = "0.8.1"
@@ -30,3 +30,8 @@ features = ["v2_32"]
 opt-level = 1
 package.image = { opt-level = 3 }
 package.nalgebra = { opt-level = 2 }
+
+[workspace]
+members = [
+  "mm_file_formats"
+]
