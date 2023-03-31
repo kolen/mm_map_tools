@@ -19,7 +19,7 @@ type Rgba8 = Rgba<u8>;
 type Pallette = Vec<Rgb8>;
 
 #[derive(Debug)]
-pub struct SpriteFile {
+pub struct Sprites {
     pub pallettes: Vec<Pallette>,
     pub frames: Vec<Frame>,
 }
@@ -50,8 +50,8 @@ impl fmt::Debug for Frame {
     }
 }
 
-impl SpriteFile {
-    pub fn parse(mut file: File) -> SpriteFile {
+impl Sprites {
+    pub fn parse(mut file: File) -> Sprites {
         let mut buf: Vec<u8> = Vec::new();
         file.read_to_end(&mut buf).expect("Can't read sprite file");
 
@@ -67,7 +67,7 @@ impl SpriteFile {
             })
             .collect();
 
-        SpriteFile {
+        Sprites {
             pallettes: header.pallettes,
             frames,
         }
@@ -205,6 +205,6 @@ mod tests {
     #[ignore]
     fn test_load() {
         let f = File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap();
-        SpriteFile::parse(f);
+        Sprites::parse(f);
     }
 }

@@ -1,6 +1,6 @@
 use crate::container::read_decompressed;
 use crate::render::{render_map_section, MapSection, RenderOptions};
-use mm_file_formats::sprite_file::SpriteFile;
+use mm_file_formats::sprites::Sprites;
 use std::error;
 use std::fs::File;
 use std::mem;
@@ -11,7 +11,7 @@ pub struct RendererCache {
     section_path: PathBuf,
     sprites_path: PathBuf,
     map_section: MapSection,
-    sprites: SpriteFile,
+    sprites: Sprites,
 }
 
 pub struct Renderer {
@@ -21,7 +21,7 @@ pub struct Renderer {
 
 pub fn load_sprites_and_map_section_cached<
     L1: Fn(&Path) -> Result<MapSection, Box<dyn error::Error>>,
-    L2: Fn(&Path) -> Result<SpriteFile, Box<dyn error::Error>>,
+    L2: Fn(&Path) -> Result<Sprites, Box<dyn error::Error>>,
 >(
     cache: Option<RendererCache>,
     section_path: &Path,
@@ -100,7 +100,7 @@ impl Renderer {
             },
             |sprites_path| {
                 eprintln!("Loading sprites {:?}", &sprites_path);
-                Ok(SpriteFile::parse(File::open(sprites_path)?))
+                Ok(Sprites::parse(File::open(sprites_path)?))
             },
         )?;
 

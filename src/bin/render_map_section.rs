@@ -1,6 +1,6 @@
 extern crate mm_map_tools;
 use mm_file_formats::map_section::MapSection;
-use mm_file_formats::sprite_file::SpriteFile;
+use mm_file_formats::sprites::Sprites;
 use mm_map_tools::container::read_decompressed;
 use mm_map_tools::render::{render_map_section, RenderOptions};
 use std::env;
@@ -21,7 +21,7 @@ fn main() {
         read_decompressed(map_section_path).expect("Couldn't deobfuscate map section"),
     )
     .expect("Couldn't parse map section");
-    let sprites = SpriteFile::parse(File::open(sprites_path).unwrap());
+    let sprites = Sprites::parse(File::open(sprites_path).unwrap());
     let image = render_map_section(&map_section, &sprites, &RenderOptions::default());
     image.save(&args[2]).unwrap();
 }

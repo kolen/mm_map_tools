@@ -1,6 +1,6 @@
 use image;
 use mm_file_formats::map_section::MapSection;
-use mm_file_formats::sprite_file::SpriteFile;
+use mm_file_formats::sprites::Sprites;
 use nalgebra::{ArrayStorage, Matrix, Matrix2x3, Vector2, Vector3, U1, U3};
 use std::cmp;
 
@@ -102,7 +102,7 @@ fn blit(destination: &mut image::RgbaImage, source: &image::RgbaImage, pos: Vect
 
 fn draw_tile(
     canvas: &mut image::RgbaImage,
-    sprites: &SpriteFile,
+    sprites: &Sprites,
     tile_coordinates: TileCoordinates,
     tile_id: u16,
     origin: Vector2<i32>,
@@ -124,7 +124,7 @@ fn draw_tile(
 
 pub fn render_map_section(
     map_section: &MapSection,
-    sprites: &SpriteFile,
+    sprites: &Sprites,
     options: &RenderOptions,
 ) -> image::RgbaImage {
     let canvas_size = CanvasSize::for_map_section(map_section);
@@ -152,7 +152,7 @@ mod tests {
     use super::*;
     use crate::test_utils::*;
     use mm_file_formats::map_section::MapSection;
-    use mm_file_formats::sprite_file::SpriteFile;
+    use mm_file_formats::sprites::Sprites;
     use std::fs::File;
 
     #[test]
@@ -162,9 +162,8 @@ mod tests {
             "Realms/Celtic/Forest/CFSec10.map",
         ))
         .unwrap();
-        let sprites = SpriteFile::parse(
-            File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap(),
-        );
+        let sprites =
+            Sprites::parse(File::open(test_file_path("Realms/Celtic/Forest/Terrain.spr")).unwrap());
         render_map_section(&map_section, &sprites, &RenderOptions::default());
     }
 }
