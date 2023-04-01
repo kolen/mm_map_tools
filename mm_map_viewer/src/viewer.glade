@@ -16,7 +16,6 @@
     <property name="title" translatable="yes">Magic &amp; Mayhem map viewer</property>
     <property name="default_width">1024</property>
     <property name="default_height">768</property>
-    <property name="has_resize_grip">True</property>
     <property name="show_menubar">False</property>
     <child type="titlebar">
       <placeholder/>
@@ -32,6 +31,7 @@
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
             <property name="spacing">5</property>
+            <property name="vexpand">true</property>
             <child>
               <object class="GtkComboBox" id="map_group_selector">
                 <property name="visible">True</property>
@@ -41,56 +41,33 @@
                   <object class="GtkCellRendererText"/>
                 </child>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
             </child>
             <child>
-              <object class="GtkScrolledWindow">
+              <object class="GtkScrolledWindow" id="map_section_selector_container">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="shadow_type">in</property>
+                <property name="vexpand">true</property>
                 <child>
-                  <object class="GtkTreeView" id="map_section_selector">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="headers_visible">False</property>
-                    <property name="show_expanders">False</property>
-                    <child internal-child="selection">
-                      <object class="GtkTreeSelection"/>
-                    </child>
-                    <child>
-                      <object class="GtkTreeViewColumn">
-                        <property name="resizable">True</property>
-                        <property name="title" translatable="yes">column</property>
-                      </object>
-                    </child>
+                  <object class="GtkListBox" id="map_section_selector">
+                    <property name="selection_mode">Browse</property>
                   </object>
                 </child>
               </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
             </child>
           </object>
-          <packing>
-            <property name="resize">False</property>
-            <property name="shrink">False</property>
-          </packing>
         </child>
         <child>
           <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">true</property>
+            <property name="vexpand">true</property>
             <child>
               <object class="GtkScrolledWindow">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="shadow_type">in</property>
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
                 <child>
                   <object class="GtkViewport">
                     <property name="visible">True</property>
@@ -99,35 +76,26 @@
                       <object class="GtkImage" id="map_image">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="stock">gtk-missing-image</property>
+                        <property name="hexpand">true</property>
+                        <property name="vexpand">true</property>
                       </object>
                     </child>
                   </object>
                 </child>
               </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
             </child>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>
+                <property name="vexpand">true</property>
                 <child>
                   <object class="GtkSpinner" id="map_rendering_spinner">
-                    <property name="height_request">32</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_bottom">7</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkScale">
@@ -136,32 +104,17 @@
                     <property name="orientation">vertical</property>
                     <property name="adjustment">max_layer</property>
                     <property name="inverted">True</property>
-                    <property name="lower_stepper_sensitivity">off</property>
-                    <property name="upper_stepper_sensitivity">off</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
+                    <property name="vexpand">true</property>
+                    <property name="draw-value">true</property>
                   </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
                 </child>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
             </child>
           </object>
-          <packing>
-            <property name="resize">True</property>
-            <property name="shrink">True</property>
-          </packing>
         </child>
       </object>
     </child>
   </object>
-  <object class="GtkListStore" id="section_store"/>
 </interface>

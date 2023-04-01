@@ -9,6 +9,9 @@ opt-level = 1
 package.image = { opt-level = 3 }
 package.nalgebra = { opt-level = 2 }
 
+[dependencies]
+mm_map_viewer.path = "mm_map_viewer"
+
 [workspace]
 members = [
   "mm_file_formats",

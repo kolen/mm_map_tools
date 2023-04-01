@@ -1,19 +1,22 @@
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use gtk::prelude::*;
+use glib::MainContext;
 use gtk::{
-    ApplicationWindow, Builder, CellRendererText, ComboBox, FileChooserAction, FileChooserDialog,
-    Image, ListStore, ResponseType, Spinner, TreeView, Window,
+    prelude::*, Application, ButtonsType, FileChooser, FileChooserAction, FileChooserDialog, Label,
+    ListBox, MessageDialog, MessageType, Window,
 };
+use gtk::{
+    ApplicationWindow, Builder, CellRendererText, ComboBox, Image, ListStore, ResponseType, Spinner,
+};
+use gtk4 as gtk;
 use mm_map_rendering::{utils::Renderer, RenderOptions};
 use std::cell::RefCell;
 use std::env;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::rc::Rc;
-use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 macro_rules! clone {
     (@param _) => ( _ );
@@ -37,39 +40,49 @@ fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
     let height = image.height() as i32;
     let raw = image.into_raw();
     let bytes = glib::Bytes::from_owned(raw);
-    Pixbuf::new_from_bytes(&bytes, Colorspace::Rgb, true, 8, width, height, width * 4)
+    Pixbuf::from_bytes(&bytes, Colorspace::Rgb, true, 8, width, height, width * 4)
 }
 
-fn debounced(timeout: u32, action: impl Fn() + 'static) -> impl Fn() + 'static {
+fn debounced(timeout: Duration, action: impl Fn() + 'static) -> impl Fn() + 'static {
     let action_rc = Rc::new(action);
     let last_invokation_id: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
     move || {
         *last_invokation_id.borrow_mut() += 1;
         let current_invokation: u32 = *last_invokation_id.borrow();
 
-        let action_rc_1 = action_rc.clone();
-        let last_invokation_id_1 = last_invokation_id.clone();
-        gtk::timeout_add(timeout, move || {
-            if *last_invokation_id_1.borrow() == current_invokation {
-                action_rc_1();
-            }
-            glib::Continue(false)
-        });
+        glib::timeout_add_local_once(
+            timeout,
+            clone!(action_rc, last_invokation_id => move || {
+                if *last_invokation_id.borrow() == current_invokation {
+                    action_rc();
+                }
+            }),
+        );
     }
 }
 
-fn create_map_section_list(mm_path: &Path, map_group: &str) -> std::io::Result<ListStore> {
+fn fill_map_section_list(
+    map_section_list: ListBox,
+    mm_path: &Path,
+    map_group: &str,
+) -> std::io::Result<()> {
     let map_section_dir = mm_path.join("Realms").join(map_group);
-    let store = ListStore::new(&[String::static_type()]);
+
+    while let Some(row) = map_section_list.row_at_index(0) {
+        map_section_list.remove(&row);
+    }
+
     for entry in map_section_dir.read_dir()? {
         let entry_path = entry?.path();
         if entry_path.extension() == Some(OsStr::new("map")) {
             if let Some(name) = entry_path.file_stem() {
-                store.insert_with_values(None, &[0], &[&name.to_string_lossy().into_owned()]);
+                let label = Label::new(Some(&name.to_string_lossy()));
+                map_section_list.append(&label);
             }
         }
     }
-    Ok(store)
+
+    Ok(())
 }
 
 fn create_map_group_list(mm_path: &Path) -> std::io::Result<ListStore> {
@@ -85,13 +98,13 @@ fn create_map_group_list(mm_path: &Path) -> std::io::Result<ListStore> {
             if !subrealm_entry_.file_type()?.is_dir() {
                 continue;
             }
-            let name: String = subrealm_entry_
+            let name = subrealm_entry_
                 .path()
                 .strip_prefix(&map_groups_dir)
                 .unwrap() // Should always have that prefix
                 .to_string_lossy()
-                .into_owned();
-            store.insert_with_values(None, &[0], &[&name]);
+                .to_string();
+            store.insert_with_values(None, &[(0, &name)]);
         }
     }
     Ok(store)
@@ -103,15 +116,9 @@ fn map_group_selector_init(map_group_selector: &ComboBox) {
     map_group_selector.add_attribute(&cell_renderer_map_group, "text", 0);
 }
 
-fn map_section_selector_init(map_section_selector: &TreeView) {
-    let column = map_section_selector.get_column(0).unwrap();
-    let cell_renderer = CellRendererText::new();
-    column.pack_start(&cell_renderer, true);
-    column.add_attribute(&cell_renderer, "text", 0);
-}
-
 fn update_map_display(
-    window: ApplicationWindow,
+    application: Application,
+    window: Window,
     image_view: gtk::Image,
     map_rendering_spinner: gtk::Spinner,
     renderer: Arc<Renderer>,
@@ -119,14 +126,14 @@ fn update_map_display(
     map_section: &str,
     max_layer: u32,
 ) {
-    let (images_channel_tx, images_channel_rx) =
-        mpsc::channel::<Result<image::RgbaImage, String>>();
+    let (images_sender, images_receiver) =
+        MainContext::channel::<Result<image::RgbaImage, String>>(Default::default());
 
-    gtk::timeout_add(100, move || {
-        let mut has_images = false;
-        map_rendering_spinner.start();
+    images_receiver.attach(
+        None,
+        clone!(map_rendering_spinner, image_view => move |image_result| {
+            map_rendering_spinner.start();
 
-        while let Ok(image_result) = images_channel_rx.try_recv() {
             match image_result {
                 Ok(image) => {
                     let pixbuf = image_to_pixbuf(image);
@@ -134,22 +141,22 @@ fn update_map_display(
                     map_rendering_spinner.stop();
                 }
                 Err(error_message) => {
-                    let msg_box = gtk::MessageDialog::new(
-                        Some(&window),
-                        gtk::DialogFlags::MODAL,
-                        gtk::MessageType::Error,
-                        gtk::ButtonsType::Ok,
-                        &error_message,
-                    );
-                    msg_box.run();
-                    msg_box.destroy();
+                    // FIXME: clos button does not close the dialog
+                    let msg_box = MessageDialog::builder()
+                        .text(&error_message)
+                        .buttons(ButtonsType::Close)
+                        .message_type(MessageType::Error)
+                        .modal(true)
+                        .transient_for(&window)
+                        .application(&application)
+                        .build();
+                    msg_box.present();
                     map_rendering_spinner.stop();
                 }
             }
-            has_images = true
-        }
-        Continue(!has_images)
-    });
+            Continue(true)
+        }),
+    );
 
     let (map_group_1, map_section_1) = (map_group.to_owned(), map_section.to_owned());
     thread::Builder::new()
@@ -162,64 +169,58 @@ fn update_map_display(
                 .render(&map_group_1, &map_section_1, &render_options)
                 .map_err(|e| format!("Error loading map section:\n{}", e));
             eprintln!("Rendering took {:?}", time.elapsed());
-            images_channel_tx.send(map_image).unwrap();
+            images_sender.send(map_image).expect("send rendered image");
         })
-        .expect("Can't create map rendering thread");
+        .expect("create map rendering thread");
 }
 
-fn create_main_window(mm_path: &Path) -> ApplicationWindow {
+fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWindow {
     let glade_src = include_str!("viewer.glade");
     let builder = Builder::new();
     builder.add_from_string(glade_src).unwrap();
 
-    let window: ApplicationWindow = builder.get_object("main_window").unwrap();
-    let image: Image = builder.get_object("map_image").unwrap();
+    let window: ApplicationWindow = builder.object("main_window").unwrap();
+    window.set_application(Some(&application));
+    let image: Image = builder.object("map_image").unwrap();
 
-    let map_group_selector: ComboBox = builder.get_object("map_group_selector").unwrap();
+    let map_group_selector: ComboBox = builder.object("map_group_selector").unwrap();
     map_group_selector_init(&map_group_selector);
     // FIXME: unwrap, should handle failure for initial load
     let map_group_store = create_map_group_list(&mm_path).expect("Map group list failed");
     map_group_selector.set_model(Some(&map_group_store));
 
-    let map_section_selector: TreeView = builder.get_object("map_section_selector").unwrap();
-    map_section_selector_init(&map_section_selector);
-    let section_store =
-        create_map_section_list(&mm_path, "Celtic/Forest").expect("Can't read section directory");
-    // FIXME: unwrap, should handle failure for initial load
-    map_section_selector.set_model(Some(&section_store));
+    let map_section_selector: ListBox = builder.object("map_section_selector").unwrap();
 
-    let max_layer_adjustment: gtk::Adjustment = builder.get_object("max_layer").unwrap();
+    let max_layer_adjustment: gtk::Adjustment = builder.object("max_layer").unwrap();
 
     let current_group = Rc::new(RefCell::new("Celtic/Forest".to_string()));
     let current_section = Rc::new(RefCell::new("CFsec01".to_string()));
-    let current_max_layer = Rc::new(RefCell::new(max_layer_adjustment.get_value() as u32));
+    let current_max_layer = Rc::new(RefCell::new(max_layer_adjustment.value() as u32));
 
     let renderer = Arc::new(Renderer::new(mm_path));
 
     let mm_path_buf = mm_path.to_path_buf();
     map_group_selector.connect_changed(
         clone!(current_group, map_section_selector => move |map_group_selector| {
-            let iter = map_group_selector.get_active_iter().unwrap();
-            let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap().unwrap();
-            let section_store = create_map_section_list(&mm_path_buf, &group_segment);
-            // FIXME: unwrap, should handle failure with error message
-            map_section_selector.set_model(Some(&section_store.expect("Can't read section directory")));
+            let iter = map_group_selector.active_iter().unwrap();
+            let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
+            fill_map_section_list(map_section_selector.clone(), &mm_path_buf, &group_segment).expect("fill map section list"); // TODO: handle error
             current_group.replace(group_segment);
         }),
     );
 
-    let map_rendering_spinner: Spinner = builder.get_object("map_rendering_spinner").unwrap();
+    let map_rendering_spinner: Spinner = builder.object("map_rendering_spinner").unwrap();
 
-    map_section_selector.connect_cursor_changed(
-        clone!(window, image, map_rendering_spinner, renderer, current_group, current_section, current_max_layer => move |map_section_selector| {
-            let selection = map_section_selector.get_selection();
-            if let Some((model, iter)) = selection.get_selected() {
-                let section_segment_value = model.get_value(&iter, 0);
-                let section_segment = section_segment_value.get::<String>().expect("Can't get section segment").expect("Expected string, got None");
+    map_section_selector.connect_row_selected(
+        clone!(application, window, image, map_rendering_spinner, renderer, current_group, current_section, current_max_layer => move |_selector, opt_row| {
+            if let Some(row) = opt_row {
+                let section_segment = row.child().expect("get ListBoxRow child").downcast::<Label>().expect("downcast to Label").label().to_string();
+
                 current_section.replace(section_segment);
 
                 update_map_display(
-                    window.clone(),
+                    application.clone(),
+                    window.clone().upcast(),
                     image.clone(),
                     map_rendering_spinner.clone(),
                     renderer.clone(),
@@ -227,22 +228,22 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
                     &current_section.borrow().clone(),
                     *current_max_layer.borrow(),
                 );
-            }
-        }),
+            };
+        })
     );
 
-    let update_map_display_on_max_level = debounced(500, {
-        let window = window.clone();
+    let update_map_display_on_max_level = debounced(Duration::from_millis(500), {
         let max_layer_adjustment = max_layer_adjustment.clone();
 
-        move || {
-            let max_layer = max_layer_adjustment.get_value() as u32;
+        clone!(window => move || {
+            let max_layer = max_layer_adjustment.value() as u32;
 
             eprintln!("Max layer: {}", max_layer);
             current_max_layer.clone().replace(max_layer);
 
             update_map_display(
-                window.clone(),
+                application.clone(),
+                window.clone().upcast(),
                 image.clone(),
                 map_rendering_spinner.clone(),
                 renderer.clone(),
@@ -250,51 +251,44 @@ fn create_main_window(mm_path: &Path) -> ApplicationWindow {
                 &current_section.borrow().clone(),
                 max_layer,
             );
-        }
+        })
     });
 
     max_layer_adjustment.connect_value_changed(move |_adj| {
         update_map_display_on_max_level();
     });
 
-    window.connect_delete_event(|_, _| {
-        gtk::main_quit();
-        Inhibit(false)
-    });
     window
 }
 
-fn run_window(mm_path: &Path) {
-    let window = create_main_window(mm_path);
-    window.show_all();
-    gtk::main();
+fn run_window(mm_path: &Path, application: Application) {
+    let window = create_main_window(mm_path, application);
+    window.show();
 }
 
 fn main() {
-    gtk::init().unwrap();
+    let application = Application::builder().build();
+    application.connect_activate(|app| {
+        if let Ok(mm_path) = env::var("MM_PATH") {
+            let mm_path_1 = Path::new(&mm_path).to_path_buf();
+            run_window(&mm_path_1, app.clone());
+        } else {
+            let dir_chooser = FileChooserDialog::builder()
+                .application(&app.clone())
+                .title("Select Magic & Mayhem directory")
+                .action(FileChooserAction::SelectFolder)
+                .build();
 
-    let dir_chooser = FileChooserDialog::with_buttons::<Window>(
-        Some("Select Magic & Mayhem directory"),
-        None,
-        FileChooserAction::SelectFolder,
-        &[("_Open", ResponseType::Accept)],
-    );
+            dir_chooser.connect_response(clone!(app => move |dialog, response_type| {
+                if response_type == ResponseType::Accept {
+                    let chooser: FileChooser = dialog.clone().upcast();
+                    let file = chooser.file().expect("get selected directory");
+                    run_window(&file.path().expect("get file path"), app.clone());
+                }
+            }));
 
-    let mm_path = env::var("MM_PATH")
-        .ok()
-        .map(|path_s| Path::new(&path_s).to_path_buf())
-        .or_else(|| {
-            if dir_chooser.run() == ResponseType::Accept {
-                Some(
-                    dir_chooser
-                        .get_filename()
-                        .expect("Can't get filename from dir chooser"),
-                )
-            } else {
-                None
-            }
-        });
-    if let Some(mm_path_1) = mm_path {
-        run_window(&mm_path_1);
-    }
+            dir_chooser.present();
+        }
+    });
+    application.run();
 }

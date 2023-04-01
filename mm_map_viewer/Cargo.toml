@@ -5,10 +5,10 @@ edition = "2021"
 description = "GUI viewer for Magic & Mayhem maps"
 
 [dependencies]
-glib = { version = "0.9.1", features = ["v2_58"] }
-gtk = { version = "0.8.1", features = ["v3_16"] }
-gio = { version = "0.8.0", features = ["v2_44"] }
-gdk-pixbuf = { version = "0.8.0", features = ["v2_32"] }
+glib = { version = "0.17.0", features = ["v2_58"] }
+gtk4 = { version = "0.6.4", features = ["v4_2"] }
+gio = { version = "0.17.0", features = ["v2_58"] }
+gdk-pixbuf = { version = "0.17.0", features = ["v2_40"] }
 image = "0.23.1"
 mm_compression = { path = "../mm_compression" }
 mm_file_formats = { path = "../mm_file_formats" }
