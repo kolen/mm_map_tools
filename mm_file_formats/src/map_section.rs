@@ -1,14 +1,22 @@
-use nom::{
-    combinator::verify, error::VerboseError, number::complete::le_u32, sequence::tuple, IResult,
-};
+use nom::{combinator::verify, number::complete::le_u32, sequence::tuple, Finish};
 use std::convert::TryInto;
+use thiserror::Error;
 
-#[derive(Debug)]
-pub struct PrematureEndWhenSeekingTile {
-    x: u32,
-    y: u32,
-    z: u32,
+#[derive(Error, Debug)]
+pub enum MapSectionError {
+    #[error("premature end of file when expecting tile at {x}, {y}, {z}")]
+    PrematureEndWhenSeekingTile { x: u32, y: u32, z: u32 },
+    #[error("parse error: {0}")]
+    ParseError(String),
 }
+
+impl<'a> From<nom::error::Error<&'a [u8]>> for MapSectionError {
+    fn from(value: nom::error::Error<&'a [u8]>) -> Self {
+        MapSectionError::ParseError(format!("{:?}", value))
+    }
+}
+
+type Result<T> = std::result::Result<T, MapSectionError>;
 
 pub struct MapSection {
     pub size_x: u32,
@@ -25,11 +33,10 @@ const TILE_BYTES: usize = 12;
 const TILES_OFFSET: usize = 0x4c;
 
 impl MapSection {
-    pub fn from_contents(contents: Vec<u8>) -> Result<Self, String> {
-        let result: IResult<_, _, VerboseError<_>> =
-            tuple((verify(le_u32, |v| *v == 6), le_u32, le_u32, le_u32))(&*contents);
-        let (_, (_, size_x, size_y, size_z)) =
-            result.map_err(|e| format!("mps parse error: {:?}", e))?;
+    pub fn from_contents(contents: Vec<u8>) -> Result<Self> {
+        let result: std::result::Result<_, nom::error::Error<_>> =
+            tuple((verify(le_u32, |v| *v == 6), le_u32, le_u32, le_u32))(&*contents).finish();
+        let (_, (_, size_x, size_y, size_z)) = result?;
 
         let map_section = MapSection {
             size_x,
@@ -38,9 +45,7 @@ impl MapSection {
             contents,
         };
         // Eagerly check last tile
-        map_section
-            .tile_at_checked(size_x - 1, size_y - 1, size_z - 1)
-            .map_err(|_| "Premature end of mps file")?;
+        map_section.tile_at_checked(size_x - 1, size_y - 1, size_z - 1)?;
 
         Ok(map_section)
     }
@@ -51,7 +56,7 @@ impl MapSection {
         self.tile_at_checked(x, y, z).unwrap()
     }
 
-    fn tile_at_checked(&self, x: u32, y: u32, z: u32) -> Result<Tile, PrematureEndWhenSeekingTile> {
+    fn tile_at_checked(&self, x: u32, y: u32, z: u32) -> Result<Tile> {
         assert!(x < self.size_x);
         assert!(y < self.size_y);
         assert!(z < self.size_z);
@@ -63,7 +68,7 @@ impl MapSection {
             id: u16::from_le_bytes(
                 self.tiles_data()[offset..offset + 2]
                     .try_into()
-                    .map_err(|_| PrematureEndWhenSeekingTile { x, y, z })?,
+                    .map_err(|_| MapSectionError::PrematureEndWhenSeekingTile { x, y, z })?,
             ),
         })
     }

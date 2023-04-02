@@ -1,7 +1,7 @@
 use crate::{render_map_section, MapSection, RenderOptions};
+use anyhow::{anyhow, Result};
 use mm_compression::read_decompressed;
 use mm_file_formats::sprites::Sprites;
-use std::error;
 use std::fs::File;
 use std::mem;
 use std::path::{Path, PathBuf};
@@ -20,15 +20,15 @@ pub struct Renderer {
 }
 
 pub fn load_sprites_and_map_section_cached<
-    L1: Fn(&Path) -> Result<MapSection, Box<dyn error::Error>>,
-    L2: Fn(&Path) -> Result<Sprites, Box<dyn error::Error>>,
+    L1: Fn(&Path) -> Result<MapSection>,
+    L2: Fn(&Path) -> Result<Sprites>,
 >(
     cache: Option<RendererCache>,
     section_path: &Path,
     sprites_path: &Path,
     load_section: L1,
     load_sprites: L2,
-) -> Result<RendererCache, Box<dyn error::Error>> {
+) -> Result<RendererCache> {
     match cache {
         None => Ok(RendererCache {
             section_path: section_path.to_path_buf(),
@@ -78,15 +78,17 @@ impl Renderer {
         map_group: &str,
         map_section: &str,
         options: &RenderOptions,
-    ) -> Result<image::RgbaImage, Box<dyn error::Error>> {
+    ) -> Result<image::RgbaImage> {
         let map_section_path_1 = self.section_path(&map_group, &map_section);
         let sprites_path = map_section_path_1
             .parent()
-            .unwrap()
+            .ok_or(anyhow!("Can't get parent of map section path"))?
             .join(Path::new("Terrain.spr"));
 
-        let mut cache_writer = self.cache.write().unwrap(); // FIXME: unwrap
-                                                            // unwrap will fail if previous write was poisoned
+        let mut cache_writer = self
+            .cache
+            .write()
+            .map_err(|e| anyhow!("Can't unlock cache for writing: {}", e))?;
         let old_cache_contents = mem::replace(&mut *cache_writer, None);
         let new_cache_contents = load_sprites_and_map_section_cached(
             old_cache_contents,

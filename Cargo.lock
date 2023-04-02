@@ -731,12 +731,14 @@ dependencies = [
  "image",
  "mm_compression",
  "nom",
+ "thiserror",
 ]
 
 [[package]]
 name = "mm_map_rendering"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "image",
  "mm_compression",
  "mm_file_formats",
