@@ -9,10 +9,20 @@
 
 #![allow(clippy::all)]
 
-use std::result::Result;
+use std::{result::Result, error::Error, fmt::Display};
 
+#[derive(Debug)]
 pub struct PrematureEnd {
     pub context_line: u32,
+}
+
+impl Display for PrematureEnd {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "premature end of file while uncompressing")
+    }
+}
+
+impl Error for PrematureEnd {
 }
 
 struct PackedDataReader<I: Iterator<Item = u8>> {
