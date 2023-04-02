@@ -754,6 +754,7 @@ dependencies = [
 name = "mm_map_viewer"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "gdk-pixbuf",
  "gio",
  "glib",

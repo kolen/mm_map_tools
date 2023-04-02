@@ -1,5 +1,6 @@
+use anyhow::{anyhow, Context, Result};
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use glib::{self, clone, MainContext};
+use glib::{self, clone, g_error, MainContext};
 use gtk::{
     prelude::*, Application, ButtonsType, FileChooser, FileChooserAction, FileChooserDialog, Label,
     ListBox, MessageDialog, MessageType, Window,
@@ -44,19 +45,20 @@ fn debounced(timeout: Duration, action: impl Fn() + 'static) -> impl Fn() + 'sta
     }
 }
 
-fn fill_map_section_list(
-    map_section_list: ListBox,
-    mm_path: &Path,
-    map_group: &str,
-) -> std::io::Result<()> {
+fn fill_map_section_list(map_section_list: ListBox, mm_path: &Path, map_group: &str) -> Result<()> {
     let map_section_dir = mm_path.join("Realms").join(map_group);
 
     while let Some(row) = map_section_list.row_at_index(0) {
         map_section_list.remove(&row);
     }
 
-    for entry in map_section_dir.read_dir()? {
-        let entry_path = entry?.path();
+    for entry in map_section_dir
+        .read_dir()
+        .context("Can't read map section directory")?
+    {
+        let entry_path = entry
+            .context("Can't read map section directory entry")?
+            .path();
         if entry_path.extension() == Some(OsStr::new("map")) {
             if let Some(name) = entry_path.file_stem() {
                 let label = Label::new(Some(&name.to_string_lossy()));
@@ -68,16 +70,21 @@ fn fill_map_section_list(
     Ok(())
 }
 
-fn create_map_group_list(mm_path: &Path) -> std::io::Result<ListStore> {
+fn create_map_group_list(mm_path: &Path) -> Result<ListStore> {
     let store = ListStore::new(&[String::static_type()]);
     let map_groups_dir = mm_path.join("Realms");
-    for realm_entry in map_groups_dir.read_dir()? {
-        let realm_entry_ = realm_entry?;
+    for realm_entry in map_groups_dir.read_dir().context("Can't read Realms dir")? {
+        let realm_entry_ = realm_entry.context("Can't read Realms dir entry")?;
         if !realm_entry_.file_type()?.is_dir() {
             continue;
         }
-        for subrealm_entry in realm_entry_.path().read_dir().unwrap() {
-            let subrealm_entry_ = subrealm_entry?;
+        for subrealm_entry in realm_entry_
+            .path()
+            .read_dir()
+            .context("Can't read 2nd level Realms dir")?
+        {
+            let subrealm_entry_ =
+                subrealm_entry.context("Can't read 2nd level dir entry in Realms")?;
             if !subrealm_entry_.file_type()?.is_dir() {
                 continue;
             }
@@ -157,10 +164,13 @@ fn update_map_display(
         .expect("create map rendering thread");
 }
 
-fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWindow {
+fn create_main_window(mm_path: &Path, application: Application) -> Result<ApplicationWindow> {
     let glade_src = include_str!("viewer.glade");
     let builder = Builder::new();
-    builder.add_from_string(glade_src).unwrap();
+    builder
+        .add_from_string(glade_src)
+        .context("UI definition error")
+        .unwrap();
 
     let window: ApplicationWindow = builder.object("main_window").unwrap();
     window.set_application(Some(&application));
@@ -168,8 +178,7 @@ fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWi
 
     let map_group_selector: ComboBox = builder.object("map_group_selector").unwrap();
     map_group_selector_init(&map_group_selector);
-    // FIXME: unwrap, should handle failure for initial load
-    let map_group_store = create_map_group_list(&mm_path).expect("Map group list failed");
+    let map_group_store = create_map_group_list(&mm_path).context("Can't get map group list")?;
     map_group_selector.set_model(Some(&map_group_store));
 
     let map_section_selector: ListBox = builder.object("map_section_selector").unwrap();
@@ -185,10 +194,15 @@ fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWi
     let mm_path_buf = mm_path.to_path_buf();
     map_group_selector.connect_changed(
         clone!(@strong current_group, @strong map_section_selector => move |map_group_selector| {
-            let iter = map_group_selector.active_iter().unwrap();
-            let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
-            fill_map_section_list(map_section_selector.clone(), &mm_path_buf, &group_segment).expect("fill map section list"); // TODO: handle error
-            current_group.replace(group_segment);
+            if let Err(e) = (|| -> Result<()> {
+                let iter = map_group_selector.active_iter().ok_or(anyhow!("No active element"))?;
+                let group_segment = map_group_store.get_value(&iter, 0).get::<String>()?;
+                fill_map_section_list(map_section_selector.clone(), &mm_path_buf, &group_segment).context("Can't fill map section list")?;
+                current_group.replace(group_segment);
+                Ok(())
+            })() {
+                g_error!("mm_map_viewer", "map_group_selector changed event: {}", e);
+            }
         }),
     );
 
@@ -241,37 +255,50 @@ fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWi
         update_map_display_on_max_level();
     });
 
-    window
+    Ok(window)
 }
 
-fn run_window(mm_path: &Path, application: Application) {
-    let window = create_main_window(mm_path, application);
+fn run_window(mm_path: &Path, application: Application) -> Result<()> {
+    let window = create_main_window(mm_path, application)?;
     window.show();
+    Ok(())
+}
+
+fn on_activate(application: Application) -> Result<()> {
+    if let Ok(mm_path) = env::var("MM_PATH") {
+        let mm_path_1 = Path::new(&mm_path).to_path_buf();
+        run_window(&mm_path_1, application.clone())?;
+    } else {
+        let dir_chooser = FileChooserDialog::builder()
+            .application(&application.clone())
+            .title("Select Magic & Mayhem directory")
+            .action(FileChooserAction::SelectFolder)
+            .build();
+
+        dir_chooser.connect_response(clone!(@strong application => move |dialog, response_type| {
+            if let Err(err) = ( || -> Result<()> {
+                if response_type == ResponseType::Accept {
+                    let chooser: FileChooser = dialog.clone().upcast();
+                    let file = chooser.file().ok_or(anyhow!("Can't get directory from chooser"))?;
+                    run_window(&file.path().ok_or(anyhow!("Can't get path from file"))?, application.clone())?;
+                }
+                Ok(())
+            })() {
+                g_error!("mm_map_viewer", "on dir chooser dialog: {}", err);
+            }
+        }));
+
+        dir_chooser.present();
+    }
+    Ok(())
 }
 
 fn main() {
     let application = Application::builder().build();
-    application.connect_activate(|app| {
-        if let Ok(mm_path) = env::var("MM_PATH") {
-            let mm_path_1 = Path::new(&mm_path).to_path_buf();
-            run_window(&mm_path_1, app.clone());
-        } else {
-            let dir_chooser = FileChooserDialog::builder()
-                .application(&app.clone())
-                .title("Select Magic & Mayhem directory")
-                .action(FileChooserAction::SelectFolder)
-                .build();
-
-            dir_chooser.connect_response(clone!(@strong app => move |dialog, response_type| {
-                if response_type == ResponseType::Accept {
-                    let chooser: FileChooser = dialog.clone().upcast();
-                    let file = chooser.file().expect("get selected directory");
-                    run_window(&file.path().expect("get file path"), app.clone());
-                }
-            }));
-
-            dir_chooser.present();
-        }
+    application.connect_activate(|application| {
+        on_activate(application.clone()).unwrap_or_else(|err| {
+            g_error!("mm_map_viewer", "on_activate: {}", err);
+        });
     });
     application.run();
 }
