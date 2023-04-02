@@ -73,9 +73,9 @@ impl PRNG {
         table[0] = Self::pseudo_map_lookup(a);
         let b = table[1];
         table[1] = Self::pseudo_map_lookup(b);
-        let c = table[b.wrapping_add(2i32 as u32) as usize]
-            ^ table[a.wrapping_add(2i32 as u32) as usize];
-        table[a.wrapping_add(2i32 as u32) as usize] = c;
+        let c = table[b.wrapping_add(2) as usize]
+            ^ table[a.wrapping_add(2) as usize];
+        table[a.wrapping_add(2) as usize] = c;
         c
     }
 
