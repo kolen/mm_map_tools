@@ -50,12 +50,9 @@ impl PRNG {
         table[1] = 103;
 
         for c in table[2..=251].rchunks_mut(1) {
-            match prng_state_iterate(prng_state) {
-                (new_prng_state, fill_value) => {
-                    prng_state = new_prng_state;
-                    c[0] = fill_value;
-                }
-            }
+            let (new_prng_state, fill_value) = prng_state_iterate(prng_state);
+            prng_state = new_prng_state;
+            c[0] = fill_value;
         }
 
         let mut mask: u32 = 0xffff_ffff;
