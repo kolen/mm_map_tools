@@ -1,7 +1,7 @@
 use image;
 use mm_file_formats::map_section::MapSection;
 use mm_file_formats::sprites::Sprites;
-use nalgebra::{ArrayStorage, Matrix, Matrix2x3, Vector2, Vector3, U1, U3};
+use nalgebra::{Matrix2x3, SMatrix, Vector2, Vector3};
 use std::cmp;
 
 pub mod utils;
@@ -12,7 +12,7 @@ const TILE_HALF_W: i32 = TILE_W / 2;
 const TILE_HALF_H: i32 = TILE_H / 2;
 const TILE_Z_OFFSET: i32 = 48 - 32; // TODO: figure out
 
-type TileCoordinates = Matrix<i32, U3, U1, ArrayStorage<i32, U3, U1>>;
+type TileCoordinates = SMatrix<i32, 3, 1>;
 
 #[derive(Debug)]
 struct CanvasSize {
