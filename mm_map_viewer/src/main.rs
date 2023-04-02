@@ -1,5 +1,5 @@
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use glib::MainContext;
+use glib::{self, clone, MainContext};
 use gtk::{
     prelude::*, Application, ButtonsType, FileChooser, FileChooserAction, FileChooserDialog, Label,
     ListBox, MessageDialog, MessageType, Window,
@@ -18,23 +18,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-macro_rules! clone {
-    (@param _) => ( _ );
-    (@param $x:ident) => ( $x );
-    ($($n:ident),+ => move || $body:expr) => (
-        {
-            $( let $n = $n.clone(); )+
-            move || $body
-        }
-    );
-    ($($n:ident),+ => move |$($p:tt),+| $body:expr) => (
-        {
-            $( let $n = $n.clone(); )+
-            move |$(clone!(@param $p),)+| $body
-        }
-    );
-}
-
 fn image_to_pixbuf(image: image::RgbaImage) -> Pixbuf {
     let width = image.width() as i32;
     let height = image.height() as i32;
@@ -52,7 +35,7 @@ fn debounced(timeout: Duration, action: impl Fn() + 'static) -> impl Fn() + 'sta
 
         glib::timeout_add_local_once(
             timeout,
-            clone!(action_rc, last_invokation_id => move || {
+            clone!(@strong action_rc, @strong last_invokation_id => move || {
                 if *last_invokation_id.borrow() == current_invokation {
                     action_rc();
                 }
@@ -131,7 +114,7 @@ fn update_map_display(
 
     images_receiver.attach(
         None,
-        clone!(map_rendering_spinner, image_view => move |image_result| {
+        clone!(@strong map_rendering_spinner, @strong image_view => move |image_result| {
             map_rendering_spinner.start();
 
             match image_result {
@@ -201,7 +184,7 @@ fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWi
 
     let mm_path_buf = mm_path.to_path_buf();
     map_group_selector.connect_changed(
-        clone!(current_group, map_section_selector => move |map_group_selector| {
+        clone!(@strong current_group, @strong map_section_selector => move |map_group_selector| {
             let iter = map_group_selector.active_iter().unwrap();
             let group_segment = map_group_store.get_value(&iter, 0).get::<String>().unwrap();
             fill_map_section_list(map_section_selector.clone(), &mm_path_buf, &group_segment).expect("fill map section list"); // TODO: handle error
@@ -212,7 +195,7 @@ fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWi
     let map_rendering_spinner: Spinner = builder.object("map_rendering_spinner").unwrap();
 
     map_section_selector.connect_row_selected(
-        clone!(application, window, image, map_rendering_spinner, renderer, current_group, current_section, current_max_layer => move |_selector, opt_row| {
+        clone!(@strong application, @strong window, @strong image, @strong map_rendering_spinner, @strong renderer, @strong current_group, @strong current_section, @strong current_max_layer => move |_selector, opt_row| {
             if let Some(row) = opt_row {
                 let section_segment = row.child().expect("get ListBoxRow child").downcast::<Label>().expect("downcast to Label").label().to_string();
 
@@ -235,7 +218,7 @@ fn create_main_window(mm_path: &Path, application: Application) -> ApplicationWi
     let update_map_display_on_max_level = debounced(Duration::from_millis(500), {
         let max_layer_adjustment = max_layer_adjustment.clone();
 
-        clone!(window => move || {
+        clone!(@strong window => move || {
             let max_layer = max_layer_adjustment.value() as u32;
 
             eprintln!("Max layer: {}", max_layer);
@@ -279,7 +262,7 @@ fn main() {
                 .action(FileChooserAction::SelectFolder)
                 .build();
 
-            dir_chooser.connect_response(clone!(app => move |dialog, response_type| {
+            dir_chooser.connect_response(clone!(@strong app => move |dialog, response_type| {
                 if response_type == ResponseType::Accept {
                     let chooser: FileChooser = dialog.clone().upcast();
                     let file = chooser.file().expect("get selected directory");
