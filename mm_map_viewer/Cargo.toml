@@ -9,7 +9,7 @@ glib = { version = "0.17.0", features = ["v2_58"] }
 gtk4 = { version = "0.6.4", features = ["v4_2"] }
 gio = { version = "0.17.0", features = ["v2_58"] }
 gdk-pixbuf = { version = "0.17.0", features = ["v2_40"] }
-image = "0.23.1"
+image = "0.24.6"
 mm_compression = { path = "../mm_compression" }
 mm_file_formats = { path = "../mm_file_formats" }
 mm_map_rendering = { path = "../mm_map_rendering" }
