@@ -9,7 +9,17 @@
 
 #![allow(clippy::cast_lossless)]
 
-use std::convert::TryInto;
+use std::{convert::TryInto, error::Error, fmt::Display};
+
+#[derive(Debug, PartialEq)]
+pub struct InputTooSmall;
+
+impl Display for InputTooSmall {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "input should be at least 4 bytes")
+    }
+}
+impl Error for InputTooSmall {}
 
 struct PRNG {
     table: [u32; 250],
@@ -90,14 +100,17 @@ impl Iterator for PRNG {
 
 /// Deobfuscates obfuscated data or obfuscates plaintext data (it's
 /// the same operation).
-pub fn process(input: &[u8]) -> Vec<u8> {
-    let mut result = Vec::with_capacity(input.len());
+pub fn process(input: &[u8]) -> Result<Vec<u8>, InputTooSmall> {
+    let mut prng = PRNG::new(u32::from_le_bytes(
+        input.get(..4).ok_or(InputTooSmall)?.try_into().unwrap(),
+    ));
 
-    let mut prng = PRNG::new(u32::from_le_bytes(input[..4].try_into().unwrap()));
+    let mut result = Vec::with_capacity(input.len());
     result.extend_from_slice(&input[0..4]);
 
     let chunks_iter = input[4..].chunks_exact(4);
     let remainder = chunks_iter.remainder();
+
     for chunk in chunks_iter {
         let current = u32::from_le_bytes(chunk.try_into().unwrap()) ^ prng.next().unwrap();
         result.extend_from_slice(&u32::to_le_bytes(current));
@@ -105,17 +118,17 @@ pub fn process(input: &[u8]) -> Vec<u8> {
     for chunk in remainder.iter() {
         result.push(*chunk ^ prng.next().unwrap() as u8);
     }
-    result
+    Ok(result)
 }
 
 #[cfg(test)]
 mod test {
-    use super::process;
+    use super::{process, InputTooSmall};
 
     #[test]
     fn test_decrypt_two_times_returns_original() {
         let source: &[u8] = "The quick brown fox jumps over the lazy dog".as_bytes();
-        let result = process(&process(source));
+        let result = process(&process(source).unwrap()).unwrap();
         assert_eq!(source, &result);
     }
 
@@ -125,7 +138,7 @@ mod test {
         let expected: &[u8] = &[
             123, 124, 125, 126, 22, 203, 42, 122, 69, 220, 114, 34, 148, 54, 160, 111, 66,
         ];
-        let result = process(&source[..]);
+        let result = process(&source[..]).unwrap();
         assert_eq!(result, expected);
     }
 
@@ -135,7 +148,17 @@ mod test {
         let expected: &[u8] = &[
             123, 124, 125, 126, 22, 203, 42, 122, 69, 220, 114, 34, 148, 54, 160, 111,
         ];
-        let result = process(&source[..]);
+        let result = process(&source[..]).unwrap();
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_empty() {
+        assert_eq!(InputTooSmall, process(&[]).unwrap_err());
+    }
+
+    #[test]
+    fn test_too_small() {
+        assert_eq!(InputTooSmall, process(&[1, 2]).unwrap_err());
     }
 }

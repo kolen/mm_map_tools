@@ -1,9 +1,9 @@
-mod obfuscation;
 mod lz_unpack;
+mod obfuscation;
 pub mod test_utils;
 
-use self::obfuscation::process;
 use self::lz_unpack::{lz_unpack, PrematureEnd};
+use self::obfuscation::process;
 use std::convert::TryInto;
 use std::error;
 use std::fmt;
@@ -50,6 +50,7 @@ impl Header {
 #[derive(Debug)]
 pub enum DecompressError {
     DeobfuscateChecksumNotMatch,
+    ObfuscateFileTooSmall,
     DecompressChecksumNonMatch,
     InvalidCompressionType,
     CompressionNotSupported,
@@ -60,26 +61,29 @@ pub enum DecompressError {
 
 impl fmt::Display for DecompressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let suberror = match self {
+        match self {
             DecompressError::DeobfuscateChecksumNotMatch => {
-                "Deobfuscation checksum does not match".into()
+                write!(f, "deobfuscation checksum does not match")
             }
             DecompressError::DecompressChecksumNonMatch => {
-                "Decompression checksum does not match".into()
+                write!(f, "decompression checksum does not match")
             }
-            DecompressError::InvalidCompressionType => "Invalid compression type".into(),
-            DecompressError::CompressionNotSupported => "Compression not supported".into(),
-            DecompressError::ContentTooSmall => "File contents are too small".into(),
-            DecompressError::FileError { error: e } => format!("File reading error: {}", e),
-            DecompressError::PrematureEnd { context: None } => "Premature end of file".into(),
+            DecompressError::ObfuscateFileTooSmall => {
+                write!(f, "file too small for obfuscation/deobfuscation")
+            }
+            DecompressError::InvalidCompressionType => write!(f, "invalid compression type"),
+            DecompressError::CompressionNotSupported => write!(f, "compression not supported"),
+            DecompressError::ContentTooSmall => write!(f, "file contents are too small"),
+            DecompressError::FileError { error: e } => write!(f, "file reading error: {}", e),
+            DecompressError::PrematureEnd { context: None } => write!(f, "premature end of file"),
             DecompressError::PrematureEnd {
                 context: Some(line),
-            } => format!(
-                "Premature end of file when lz unpacking, lz.unpack.rs line {}",
+            } => write!(
+                f,
+                "premature end of file when lz unpacking, lz.unpack.rs line {}",
                 line
             ),
-        };
-        write!(f, "Decompression error: {}", suberror)
+        }
     }
 }
 
@@ -105,6 +109,12 @@ impl From<PrematureEnd> for DecompressError {
     }
 }
 
+impl From<obfuscation::InputTooSmall> for DecompressError {
+    fn from(_error: obfuscation::InputTooSmall) -> Self {
+        DecompressError::ObfuscateFileTooSmall
+    }
+}
+
 fn checksum(data: &[u8]) -> u32 {
     let mut sum: u32 = 0;
     let mut odd: bool = false;
@@ -124,7 +134,7 @@ fn checksum(data: &[u8]) -> u32 {
 }
 
 fn deobfuscate(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
-    let deobfuscated = process(input);
+    let deobfuscated = process(input)?;
     let header = Header::from_bytes(&deobfuscated)?;
     if header.checksum_deobfuscated == checksum(&deobfuscated[HEADER_SIZE..]) {
         Ok(deobfuscated)
