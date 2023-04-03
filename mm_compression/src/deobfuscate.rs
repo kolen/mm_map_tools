@@ -88,7 +88,7 @@ impl Iterator for PRNG {
     }
 }
 
-pub fn decrypt(input: &mut [u8]) -> Vec<u8> {
+pub fn decrypt(input: &[u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(input.len());
 
     let mut prng = PRNG::new(u32::from_le_bytes(input[..4].try_into().unwrap()));
