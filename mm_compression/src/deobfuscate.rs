@@ -11,80 +11,76 @@
 
 use std::convert::TryInto;
 
-/// For prng_state return new prng_state and next table entry. Used
-/// only for initializing PRNG table.
-fn prng_state_iterate(prng_state: u32) -> (u32, u32) {
-    let mut t = 0x41c6_4e6du64.wrapping_mul(prng_state as u64) as i64;
-
-    let mut t_hi: u32 = (t >> 32) as u32;
-    t_hi = t_hi.wrapping_shl(16);
-
-    let t_lo: u32 = t as u32;
-
-    t = (((t_hi as u64) << 32) | (t_lo as u64)) as i64;
-    t = (t as u64).wrapping_add(0xffff_0000_3039) as i64 as i64;
-
-    let new_prng_state = t as u32;
-    let table_entry: u32 = (((t >> 32) as u32) & 0xffff_0000u32) | ((t as u32) >> 16);
-
-    assert_eq!(
-        (new_prng_state & 0xffff_0000) >> 16,
-        table_entry & 0xffff,
-        "Returned data words not match: {:x}, {:x}",
-        new_prng_state,
-        table_entry
-    );
-    (new_prng_state, table_entry)
-}
-
 struct PRNG {
-    table: [u32; 256],
+    table: [u32; 250],
+    i: usize,
+    j: usize,
 }
 
 impl PRNG {
     pub fn new(seed: u32) -> Self {
-        let mut prng_state: u32 = seed;
-        let mut table: [u32; 256] = [0; 256];
+        PRNG {
+            table: Self::table_from_seed(seed),
+            i: 0,
+            j: 103,
+        }
+    }
 
-        table[0] = 0;
-        table[1] = 103;
+    pub fn next(self: &mut Self) -> u32 {
+        let value = self.table[self.i] ^ self.table[self.j];
+        self.table[self.i] = value;
 
-        for c in table[2..=251].rchunks_mut(1) {
-            let (new_prng_state, fill_value) = prng_state_iterate(prng_state);
-            prng_state = new_prng_state;
-            c[0] = fill_value;
+        self.i = (self.i + 1) % 250;
+        self.j = (self.j + 1) % 250;
+
+        value
+    }
+
+    fn table_from_seed(seed: u32) -> [u32; 250] {
+        let mut current_seed: u32 = seed;
+        let mut table: [u32; 250] = [0; 250];
+
+        for chunk in table.rchunks_mut(1) {
+            let (new_seed, fill_value) = Self::seed_iterate(current_seed);
+            current_seed = new_seed;
+            chunk[0] = fill_value;
         }
 
         let mut mask: u32 = 0xffff_ffff;
         let mut bit: u32 = 0x8000_0000;
-        let mut i = 5;
+        let mut i = 3;
         while bit != 0 {
             table[i] = bit | table[i] & mask;
             i += 7;
             bit >>= 1;
             mask >>= 1;
         }
-        PRNG { table }
+
+        table
     }
 
-    pub fn next(self: &mut Self) -> u32 {
-        let table = &mut self.table;
-        let a = table[0];
-        table[0] = Self::pseudo_map_lookup(a);
-        let b = table[1];
-        table[1] = Self::pseudo_map_lookup(b);
-        let c = table[b.wrapping_add(2) as usize]
-            ^ table[a.wrapping_add(2) as usize];
-        table[a.wrapping_add(2) as usize] = c;
-        c
-    }
+    fn seed_iterate(seed: u32) -> (u32, u32) {
+        let mut t = 0x41c6_4e6du64.wrapping_mul(seed as u64) as u64;
 
-    fn pseudo_map_lookup(x: u32) -> u32 {
-        if x >= 0xf9 {
-            0
-        } else {
-            x + 1
-        }
+        let mut t_hi: u32 = (t >> 32) as u32;
+        t_hi = t_hi.wrapping_shl(16);
+
+        let t_lo: u32 = t as u32;
+
+        t = ((t_hi as u64) << 32) | (t_lo as u64);
+        t = t.wrapping_add(0xffff_0000_3039);
+
+        let new_seed = t as u32;
+        let table_entry: u32 = (((t >> 32) as u32) & 0xffff_0000) | ((t as u32) >> 16);
+
+        debug_assert_eq!(
+            (new_seed & 0xffff_0000) >> 16,
+            table_entry & 0xffff,
+            "Returned data words not match: {:x}, {:x}",
+            new_seed,
+            table_entry
+        );
+        (new_seed, table_entry)
     }
 }
 
@@ -104,17 +100,4 @@ pub fn decrypt(input: &mut [u8]) -> Vec<u8> {
         result.push(*chunk ^ prng.next() as u8);
     }
     result
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_prng_state_iterate() {
-        assert_eq!(prng_state_iterate(0x7654_3210), (0xd17a_6109, 0x0a14_d17a));
-        assert_eq!(prng_state_iterate(0x0000_0000), (12345, 0));
-        assert_eq!(prng_state_iterate(0x0000_0001), (0x41c6_7ea6, 0x41c6));
-        assert_eq!(prng_state_iterate(0xffff_ffff), (0xbe39e1cc, 0x4e6cbe39));
-    }
 }
