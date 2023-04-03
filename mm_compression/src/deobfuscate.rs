@@ -116,4 +116,24 @@ mod test {
         let result = decrypt(&decrypt(source));
         assert_eq!(source, &result);
     }
+
+    #[test]
+    fn test_basic() {
+        let source = (123..140).collect::<Vec<u8>>();
+        let expected: &[u8] = &[
+            123, 124, 125, 126, 22, 203, 42, 122, 69, 220, 114, 34, 148, 54, 160, 111, 66,
+        ];
+        let result = decrypt(&source[..]);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_basic_no_remainder() {
+        let source = (123..139).collect::<Vec<u8>>();
+        let expected: &[u8] = &[
+            123, 124, 125, 126, 22, 203, 42, 122, 69, 220, 114, 34, 148, 54, 160, 111,
+        ];
+        let result = decrypt(&source[..]);
+        assert_eq!(result, expected);
+    }
 }
