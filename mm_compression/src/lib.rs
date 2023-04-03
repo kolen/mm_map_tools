@@ -1,8 +1,8 @@
-mod deobfuscate;
+mod obfuscation;
 mod lz_unpack;
 pub mod test_utils;
 
-use self::deobfuscate::process;
+use self::obfuscation::process;
 use self::lz_unpack::{lz_unpack, PrematureEnd};
 use std::convert::TryInto;
 use std::error;
