@@ -105,3 +105,15 @@ pub fn decrypt(input: &[u8]) -> Vec<u8> {
     }
     result
 }
+
+#[cfg(test)]
+mod test {
+    use super::decrypt;
+
+    #[test]
+    fn test_decrypt_two_times_returns_original() {
+        let source: &[u8] = "The quick brown fox jumps over the lazy dog".as_bytes();
+        let result = decrypt(&decrypt(source));
+        assert_eq!(source, &result);
+    }
+}
