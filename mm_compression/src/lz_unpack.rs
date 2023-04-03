@@ -9,7 +9,7 @@
 
 #![allow(clippy::all)]
 
-use std::{result::Result, error::Error, fmt::Display};
+use std::{error::Error, fmt::Display, result::Result};
 
 #[derive(Debug)]
 pub struct PrematureEnd {
@@ -22,8 +22,7 @@ impl Display for PrematureEnd {
     }
 }
 
-impl Error for PrematureEnd {
-}
+impl Error for PrematureEnd {}
 
 struct PackedDataReader<I: Iterator<Item = u8>> {
     iter: I,

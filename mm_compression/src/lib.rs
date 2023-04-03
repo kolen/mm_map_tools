@@ -20,7 +20,8 @@ enum CompressionType {
 
 #[derive(Debug)]
 struct Header {
-    #[allow(dead_code)] seed: u32,
+    #[allow(dead_code)]
+    seed: u32,
     unpacked_size: u32,
     checksum_deobfuscated: u32,
     checksum_uncompressed: u32,
