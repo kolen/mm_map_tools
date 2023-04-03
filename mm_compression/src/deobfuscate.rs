@@ -26,16 +26,6 @@ impl PRNG {
         }
     }
 
-    pub fn next(self: &mut Self) -> u32 {
-        let value = self.table[self.i] ^ self.table[self.j];
-        self.table[self.i] = value;
-
-        self.i = (self.i + 1) % 250;
-        self.j = (self.j + 1) % 250;
-
-        value
-    }
-
     fn table_from_seed(seed: u32) -> [u32; 250] {
         let mut current_seed: u32 = seed;
         let mut table: [u32; 250] = [0; 250];
@@ -84,6 +74,20 @@ impl PRNG {
     }
 }
 
+impl Iterator for PRNG {
+    type Item = u32;
+
+    fn next(self: &mut Self) -> Option<u32> {
+        let value = self.table[self.i] ^ self.table[self.j];
+        self.table[self.i] = value;
+
+        self.i = (self.i + 1) % 250;
+        self.j = (self.j + 1) % 250;
+
+        Some(value)
+    }
+}
+
 pub fn decrypt(input: &mut [u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(input.len());
 
@@ -93,11 +97,11 @@ pub fn decrypt(input: &mut [u8]) -> Vec<u8> {
     let chunks_iter = input[4..].chunks_exact(4);
     let remainder = chunks_iter.remainder();
     for chunk in chunks_iter {
-        let current = u32::from_le_bytes(chunk.try_into().unwrap()) ^ prng.next();
+        let current = u32::from_le_bytes(chunk.try_into().unwrap()) ^ prng.next().unwrap();
         result.extend_from_slice(&u32::to_le_bytes(current));
     }
     for chunk in remainder.iter() {
-        result.push(*chunk ^ prng.next() as u8);
+        result.push(*chunk ^ prng.next().unwrap() as u8);
     }
     result
 }
