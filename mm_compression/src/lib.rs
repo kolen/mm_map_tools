@@ -2,7 +2,7 @@ mod deobfuscate;
 mod lz_unpack;
 pub mod test_utils;
 
-use self::deobfuscate::decrypt;
+use self::deobfuscate::process;
 use self::lz_unpack::{lz_unpack, PrematureEnd};
 use std::convert::TryInto;
 use std::error;
@@ -124,7 +124,7 @@ fn checksum(data: &[u8]) -> u32 {
 }
 
 fn deobfuscate(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
-    let deobfuscated = decrypt(input);
+    let deobfuscated = process(input);
     let header = Header::from_bytes(&deobfuscated)?;
     if header.checksum_deobfuscated == checksum(&deobfuscated[HEADER_SIZE..]) {
         Ok(deobfuscated)

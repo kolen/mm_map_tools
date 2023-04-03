@@ -88,7 +88,9 @@ impl Iterator for PRNG {
     }
 }
 
-pub fn decrypt(input: &[u8]) -> Vec<u8> {
+/// Deobfuscates obfuscated data or obfuscates plaintext data (it's
+/// the same operation).
+pub fn process(input: &[u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(input.len());
 
     let mut prng = PRNG::new(u32::from_le_bytes(input[..4].try_into().unwrap()));
@@ -108,12 +110,12 @@ pub fn decrypt(input: &[u8]) -> Vec<u8> {
 
 #[cfg(test)]
 mod test {
-    use super::decrypt;
+    use super::process;
 
     #[test]
     fn test_decrypt_two_times_returns_original() {
         let source: &[u8] = "The quick brown fox jumps over the lazy dog".as_bytes();
-        let result = decrypt(&decrypt(source));
+        let result = process(&process(source));
         assert_eq!(source, &result);
     }
 
@@ -123,7 +125,7 @@ mod test {
         let expected: &[u8] = &[
             123, 124, 125, 126, 22, 203, 42, 122, 69, 220, 114, 34, 148, 54, 160, 111, 66,
         ];
-        let result = decrypt(&source[..]);
+        let result = process(&source[..]);
         assert_eq!(result, expected);
     }
 
@@ -133,7 +135,7 @@ mod test {
         let expected: &[u8] = &[
             123, 124, 125, 126, 22, 203, 42, 122, 69, 220, 114, 34, 148, 54, 160, 111,
         ];
-        let result = decrypt(&source[..]);
+        let result = process(&source[..]);
         assert_eq!(result, expected);
     }
 }
