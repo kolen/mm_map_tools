@@ -1,0 +1,8 @@
+[package]
+name = "mm_compression_cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+mm_compression = { path = "../mm_compression" }
+clap = { version = "4.2", features = ["derive"] }

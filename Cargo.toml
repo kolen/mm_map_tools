@@ -16,6 +16,7 @@ mm_map_viewer.path = "mm_map_viewer"
 members = [
   "mm_file_formats",
   "mm_compression",
+  "mm_compression_cli",
   "mm_map_rendering",
   "mm_map_viewer",
 ]
