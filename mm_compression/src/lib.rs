@@ -1,8 +1,7 @@
-mod lz_unpack;
+mod compression;
 mod obfuscation;
 pub mod test_utils;
 
-use self::lz_unpack::{lz_unpack, PrematureEnd};
 use self::obfuscation::process;
 use std::convert::TryInto;
 use std::error;
@@ -101,14 +100,6 @@ impl From<core::array::TryFromSliceError> for DecompressError {
     }
 }
 
-impl From<PrematureEnd> for DecompressError {
-    fn from(error: PrematureEnd) -> Self {
-        DecompressError::PrematureEnd {
-            context: Some(error.context_line),
-        }
-    }
-}
-
 impl From<obfuscation::InputTooSmall> for DecompressError {
     fn from(_error: obfuscation::InputTooSmall) -> Self {
         DecompressError::ObfuscateFileTooSmall
@@ -145,10 +136,11 @@ fn deobfuscate(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
 
 fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
-    let buffer = lz_unpack(
-        (&input[HEADER_SIZE..]).iter().cloned(),
-        header.unpacked_size as usize,
-    )?;
+
+    let mut buffer = Vec::with_capacity(header.unpacked_size as usize);
+    let mut compressed_reader =
+        compression::decompress(&input[HEADER_SIZE..]).take(header.unpacked_size as u64);
+    compressed_reader.read_to_end(&mut buffer)?;
 
     if header.checksum_uncompressed == checksum(&buffer) {
         Ok(buffer)

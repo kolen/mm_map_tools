@@ -5,3 +5,4 @@ edition = "2021"
 description = "Utilities for handling file compression and obfuscation from Magic & Mayhem"
 
 [dependencies]
+bitstream-io = "1.6.0"
