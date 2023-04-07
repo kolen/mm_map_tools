@@ -24,6 +24,7 @@ enum CompressionType {
     Uncompressed = 0,
     RLE = 1,
     LZSS = 2,
+    Unknown,
 }
 
 #[derive(Debug)]
@@ -49,7 +50,7 @@ impl Header {
                 x if x == CompressionType::Uncompressed as u32 => CompressionType::Uncompressed,
                 x if x == CompressionType::RLE as u32 => CompressionType::RLE,
                 x if x == CompressionType::LZSS as u32 => CompressionType::LZSS,
-                _ => panic!("Invalid compression type"), // TODO: return error
+                _ => CompressionType::Unknown,
             },
         })
     }
@@ -166,8 +167,8 @@ pub fn decompress(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(&output)?;
     match header.compression {
         CompressionType::Uncompressed => Ok(output[HEADER_SIZE..].to_vec()),
-        CompressionType::RLE => Err(DecompressError::CompressionNotSupported),
         CompressionType::LZSS => lz77_decompress(&output),
+        _ => Err(DecompressError::CompressionNotSupported),
     }
 }
 
