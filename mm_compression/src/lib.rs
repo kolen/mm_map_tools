@@ -23,7 +23,7 @@ use std::path::Path;
 enum CompressionType {
     Uncompressed = 0,
     RLE = 1,
-    LZ77 = 2,
+    LZSS = 2,
 }
 
 #[derive(Debug)]
@@ -48,7 +48,7 @@ impl Header {
             compression: match u32::from_le_bytes(input[0x10..0x14].try_into()?) {
                 x if x == CompressionType::Uncompressed as u32 => CompressionType::Uncompressed,
                 x if x == CompressionType::RLE as u32 => CompressionType::RLE,
-                x if x == CompressionType::LZ77 as u32 => CompressionType::LZ77,
+                x if x == CompressionType::LZSS as u32 => CompressionType::LZSS,
                 _ => panic!("Invalid compression type"), // TODO: return error
             },
         })
@@ -167,7 +167,7 @@ pub fn decompress(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     match header.compression {
         CompressionType::Uncompressed => Ok(output[HEADER_SIZE..].to_vec()),
         CompressionType::RLE => Err(DecompressError::CompressionNotSupported),
-        CompressionType::LZ77 => lz77_decompress(&output),
+        CompressionType::LZSS => lz77_decompress(&output),
     }
 }
 
