@@ -116,22 +116,53 @@ impl From<obfuscation::InputTooSmall> for DecompressError {
     }
 }
 
-fn checksum(data: &[u8]) -> u32 {
-    let mut sum: u32 = 0;
-    let mut odd: bool = false;
+struct ChecksummingReader<R: Read> {
+    reader: R,
+    pub checksum: u32,
+    odd: bool,
+    current_word: u32,
+    current_word_fill: u32,
+}
 
-    // Last incomplete chunk of bytes (<4) is ignored
-    for chunk in data.chunks_exact(4) {
-        let element = u32::from_le_bytes(chunk.try_into().unwrap());
-
-        if odd {
-            sum = sum.wrapping_add(element);
-        } else {
-            sum ^= element;
+impl<R: Read> Read for ChecksummingReader<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let result = self.reader.read(buf);
+        if let Ok(bytes_read) = result {
+            for &byte in &buf[0..bytes_read] {
+                self.current_word |= (byte as u32) << (8 * self.current_word_fill);
+                self.current_word_fill += 1;
+                if self.current_word_fill >= 4 {
+                    if self.odd {
+                        self.checksum = self.checksum.wrapping_add(self.current_word);
+                    } else {
+                        self.checksum ^= self.current_word;
+                    }
+                    self.current_word = 0;
+                    self.current_word_fill = 0;
+                    self.odd = !self.odd;
+                }
+            }
         }
-        odd = !odd;
+        result
     }
-    sum
+}
+
+/// Wraps reader with a reader that calculates checksum
+fn checksummed<R: Read>(reader: R) -> ChecksummingReader<R> {
+    ChecksummingReader {
+        reader,
+        checksum: 0,
+        odd: false,
+        current_word: 0,
+        current_word_fill: 0,
+    }
+}
+
+#[deprecated]
+fn checksum<R: Read>(reader: R) -> u32 {
+    let mut checksummer = checksummed(reader);
+    std::io::copy(&mut checksummer, &mut std::io::sink()).unwrap();
+    checksummer.checksum
 }
 
 fn deobfuscate(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
@@ -148,11 +179,12 @@ fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
 
     let mut buffer = Vec::with_capacity(header.unpacked_size as usize);
-    let mut compressed_reader =
-        compression::decompress(&input[HEADER_SIZE..]).take(header.unpacked_size as u64);
+    let mut compressed_reader = checksummed(
+        compression::decompress(&input[HEADER_SIZE..]).take(header.unpacked_size as u64),
+    );
     compressed_reader.read_to_end(&mut buffer)?;
 
-    if header.checksum_uncompressed == checksum(&buffer) {
+    if header.checksum_uncompressed == compressed_reader.checksum {
         Ok(buffer)
     } else {
         Err(DecompressError::DecompressChecksumNonMatch)
