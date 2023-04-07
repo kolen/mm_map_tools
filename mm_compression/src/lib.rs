@@ -1,3 +1,12 @@
+//! Support for compression and obfuscation formats used in Magic &
+//! Mayhem
+//!
+//! Some of Magic & Mayhem files are compressed and obfuscated (seems
+//! that compression and obfuscation are always used together,
+//! i.e. there's no just compressed but not obfuscated files and vice
+//! versa). Files are, obviously, first compressed and then
+//! obfuscated.
+
 mod compression;
 mod obfuscation;
 pub mod test_utils;

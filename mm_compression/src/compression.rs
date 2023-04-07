@@ -1,3 +1,11 @@
+//! Decompression support for Magic & Mayhem
+//!
+//! Magic & Mayhem uses a variant of LZSS compression algorithm with
+//! 12 bits window offset, 4 bits window length, '0' bit value for
+//! window reference and big-endian encoding for offset and length.
+//!
+//! Compressed files have header (see [mm_compression]).
+
 use std::io::Read;
 
 use bitstream_io::{BigEndian, BitRead, BitReader};
