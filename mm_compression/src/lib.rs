@@ -175,7 +175,7 @@ fn deobfuscate(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     }
 }
 
-fn lz77_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
+fn lzss_decompress(input: &[u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(input)?;
 
     let mut buffer = Vec::with_capacity(header.unpacked_size as usize);
@@ -199,7 +199,7 @@ pub fn decompress(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
     let header = Header::from_bytes(&output)?;
     match header.compression {
         CompressionType::Uncompressed => Ok(output[HEADER_SIZE..].to_vec()),
-        CompressionType::LZSS => lz77_decompress(&output),
+        CompressionType::LZSS => lzss_decompress(&output),
         _ => Err(DecompressError::CompressionNotSupported),
     }
 }
