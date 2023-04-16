@@ -1,0 +1,27 @@
+body {
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+.sprites {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.sprites li {
+    list-style-type: none;
+    margin: 1px;
+}
+
+.sprites img {
+}
+
+.sprites .sprite-number {
+    text-align: center;
+}
+
+.sprites .sprite-name {
+    text-align: center;
+    font-size: 10px;
+    color: rgb(70%, 70%, 70%);
+}
