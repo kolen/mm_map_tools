@@ -60,26 +60,26 @@ impl PRNG {
     }
 
     fn seed_iterate(seed: u32) -> (u32, u32) {
-        let mut t = 0x41c6_4e6du64.wrapping_mul(seed as u64) as u64;
+        let mut value = 0x41c6_4e6du64.wrapping_mul(seed as u64) as u64;
 
-        let mut t_hi: u32 = (t >> 32) as u32;
-        t_hi = t_hi.wrapping_shl(16);
+        // Rearrange pairs of bytes in 64-bit value:
+        //  |  3 |  2 |  1 |  0 |
+        //          to
+        //  |  2 |ffff|  1 |  0 |
 
-        let t_lo: u32 = t as u32;
+        value =
+            value & 0xffff_ffff | ((value & 0x0000_ffff_0000_0000) << 16) | 0x0000_ffff_0000_0000;
 
-        t = ((t_hi as u64) << 32) | (t_lo as u64);
-        t = t.wrapping_add(0xffff_0000_3039);
+        value = value.wrapping_add(12345);
 
-        let new_seed = t as u32;
-        let table_entry: u32 = (((t >> 32) as u32) & 0xffff_0000) | ((t as u32) >> 16);
+        //  |  3 |  2 |  1 |  0 |
+        //
+        //            |  1 |  0 | - use as new seed
+        //            |  3 |  1 | - use as table entry
 
-        debug_assert_eq!(
-            (new_seed & 0xffff_0000) >> 16,
-            table_entry & 0xffff,
-            "Returned data words not match: {:x}, {:x}",
-            new_seed,
-            table_entry
-        );
+        let new_seed = value as u32;
+        let table_entry: u32 = (((value >> 32) as u32) & 0xffff_0000) | ((value as u32) >> 16);
+
         (new_seed, table_entry)
     }
 }
