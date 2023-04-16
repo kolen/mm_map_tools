@@ -60,14 +60,9 @@ impl PRNG {
     }
 
     fn seed_iterate(seed: u32) -> (u32, u32) {
-        let mut value = 0x41c6_4e6du64.wrapping_mul(seed as u64) as u64;
-
-        value = value & 0xffff_ffff_ffff;
-        value = value.wrapping_add(12345);
-
+        let value = (seed as u64).wrapping_mul(0x41c6_4e6d).wrapping_add(12345);
         let new_seed = value as u32;
         let table_entry = (value >> 16) as u32;
-
         (new_seed, table_entry)
     }
 }
