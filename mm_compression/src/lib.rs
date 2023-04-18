@@ -11,7 +11,6 @@ mod compression;
 mod obfuscation;
 pub mod test_utils;
 
-use self::obfuscation::process;
 use std::convert::TryInto;
 use std::error;
 use std::fmt;
@@ -29,24 +28,21 @@ enum CompressionType {
 
 #[derive(Debug)]
 struct Header {
-    #[allow(dead_code)]
-    seed: u32,
     unpacked_size: u32,
     checksum_deobfuscated: u32,
     checksum_uncompressed: u32,
     compression: CompressionType,
 }
 
-const HEADER_SIZE: usize = 4 * 5;
+const HEADER_SIZE: usize = 4 * 4;
 
 impl Header {
     pub fn from_bytes(input: &[u8]) -> Result<Header, DecompressError> {
         Ok(Header {
-            seed: u32::from_le_bytes(input[0x0..0x4].try_into()?),
-            unpacked_size: u32::from_le_bytes(input[0x4..0x8].try_into()?),
-            checksum_deobfuscated: u32::from_le_bytes(input[0x8..0xc].try_into()?),
-            checksum_uncompressed: u32::from_le_bytes(input[0xc..0x10].try_into()?),
-            compression: match u32::from_le_bytes(input[0x10..0x14].try_into()?) {
+            unpacked_size: u32::from_le_bytes(input[0..0x4].try_into()?),
+            checksum_deobfuscated: u32::from_le_bytes(input[0x4..0x8].try_into()?),
+            checksum_uncompressed: u32::from_le_bytes(input[0x8..0xc].try_into()?),
+            compression: match u32::from_le_bytes(input[0xc..0x10].try_into()?) {
                 x if x == CompressionType::Uncompressed as u32 => CompressionType::Uncompressed,
                 x if x == CompressionType::RLE as u32 => CompressionType::RLE,
                 x if x == CompressionType::LZSS as u32 => CompressionType::LZSS,
@@ -166,7 +162,7 @@ fn checksum<R: Read>(reader: R) -> u32 {
 }
 
 fn deobfuscate(input: &mut [u8]) -> Result<Vec<u8>, DecompressError> {
-    let deobfuscated = process(input)?;
+    let deobfuscated = obfuscation::deobfuscate(input)?;
     let header = Header::from_bytes(&deobfuscated)?;
     if header.checksum_deobfuscated == checksum(&deobfuscated[HEADER_SIZE..]) {
         Ok(deobfuscated)
