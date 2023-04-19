@@ -16,16 +16,16 @@ use std::str::from_utf8;
 
 type Rgb8 = Rgb<u8>;
 type Rgba8 = Rgba<u8>;
-type Pallette = Vec<Rgb8>;
+type Palette = Vec<Rgb8>;
 
 #[derive(Debug)]
 pub struct Sprites {
-    pub pallettes: Vec<Pallette>,
+    pub palettes: Vec<Palette>,
     pub frames: Vec<Frame>,
 }
 
 struct SpriteFileHeader {
-    pallettes: Vec<Pallette>,
+    palettes: Vec<Palette>,
     frame_offsets: Vec<u32>,
 }
 
@@ -61,14 +61,14 @@ impl Sprites {
             .frame_offsets
             .iter()
             .map(|&offset| {
-                frame(&header.pallettes)(&payload[offset as usize..])
+                frame(&header.palettes)(&payload[offset as usize..])
                     .unwrap_or_else(|_| panic!("Can't decode frame at {}", offset))
                     .1
             })
             .collect();
 
         Sprites {
-            pallettes: header.pallettes,
+            palettes: header.palettes,
             frames,
         }
     }
@@ -79,7 +79,7 @@ struct IterPixelRow<'a> {
     pixels: &'a [u8],
     is_skip: bool,
     pixels_left: u8,
-    pallette: &'a [Rgb8],
+    palette: &'a [Rgb8],
 }
 
 impl<'a> Iterator for IterPixelRow<'a> {
@@ -96,7 +96,7 @@ impl<'a> Iterator for IterPixelRow<'a> {
         } else {
             let pixel = self.pixels[0];
             self.pixels = &self.pixels[1..];
-            Some(self.pallette[pixel as usize].to_rgba())
+            Some(self.palette[pixel as usize].to_rgba())
         }
     }
 }
@@ -111,7 +111,7 @@ fn pixels(
     lines: impl IntoIterator<Item = LineOffsets>,
     width: u32,
     height: u32,
-    pallette: &[Rgb8],
+    palette: &[Rgb8],
 ) -> RgbaImage {
     let mut image = ImageBuffer::new(width, height);
 
@@ -127,7 +127,7 @@ fn pixels(
             pixels: &input[offsets.pixels_offset as usize..],
             is_skip: false,
             pixels_left: 0,
-            pallette,
+            palette,
         }
         .chain(iter::repeat(Rgba([0, 0, 0, 0])))
         .take(width as usize);
@@ -140,12 +140,12 @@ fn pixels(
     image
 }
 
-fn frame(pallettes: &[Pallette]) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_ {
+fn frame(palettes: &[Palette]) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_ {
     move |i: &[u8]| {
         let (input, (_size, width, height, center_x, center_y)) =
             tuple((le_u32, le_u32, le_u32, le_i32, le_i32))(i)?;
         let (input, name) = map(map_res(take(8usize), from_utf8), String::from)(input)?;
-        let (input, pallette_index) = le_u32(input)?;
+        let (input, palette_index) = le_u32(input)?;
         let (input, (unknown1, unknown2)) = tuple((le_u32, le_u32))(input)?;
         let (input, rows) = count(
             map(tuple((le_u32, le_u32)), |(runs_offset, pixels_offset)| {
@@ -156,7 +156,7 @@ fn frame(pallettes: &[Pallette]) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_
             }),
             height as usize,
         )(input)?;
-        let image = pixels(i, rows, width, height, &pallettes[pallette_index as usize]);
+        let image = pixels(i, rows, width, height, &palettes[palette_index as usize]);
 
         Ok((
             input,
@@ -174,7 +174,7 @@ fn frame(pallettes: &[Pallette]) -> impl Fn(&[u8]) -> IResult<&[u8], Frame> + '_
     }
 }
 
-fn pallette(i: &[u8]) -> IResult<&[u8], Pallette> {
+fn palette(i: &[u8]) -> IResult<&[u8], Palette> {
     count(
         map(tuple((le_u8, le_u8, le_u8)), |(r, g, b)| Rgb([r, g, b])),
         256usize,
@@ -182,15 +182,15 @@ fn pallette(i: &[u8]) -> IResult<&[u8], Pallette> {
 }
 
 fn header(input: &[u8]) -> IResult<&[u8], SpriteFileHeader> {
-    let (input, (_, _, _, num_frames, num_pallettes, _)) =
+    let (input, (_, _, _, num_frames, num_palettes, _)) =
         tuple((tag("SPR\0"), le_u32, le_u32, le_u32, le_u32, le_u32))(input)?;
-    let (input, pallettes) = count(pallette, num_pallettes as usize)(input)?;
+    let (input, palettes) = count(palette, num_palettes as usize)(input)?;
     let (input, frame_offsets) = count(le_u32, num_frames as usize)(input)?;
 
     Ok((
         input,
         SpriteFileHeader {
-            pallettes,
+            palettes,
             frame_offsets,
         },
     ))
